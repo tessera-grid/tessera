@@ -3,22 +3,22 @@ import type { Row } from '../../types'
 
 export interface RowExpandingHooks {
   /**
-   * Раскрытие или сворачивание строки. Промис при раскрытии — ожидание (ленивая
-   * подгрузка потомков): отказ сворачивает строку обратно (ADR 0041).
+   * A row was expanded or collapsed. A promise on expand means pending (lazy loading of
+   * descendants): a rejection collapses the row back (ADR 0041).
    */
   onExpandRow: (
     row: Row<any, any>,
     expanded: boolean,
   ) => void | Promise<unknown>
-  /** У строки есть дети, которых нет в `subRows` (ADR 0054). */
+  /** The row has children that aren't in `subRows` (ADR 0054). */
   hasChildren?: (row: Row<any, any>) => boolean
   /**
-   * Загрузка детей ленивой строки — на каждое раскрытие (ADR 0054). Массив
-   * показывается сразу, промис — после ожидания.
+   * Loads a lazy row's children — on every expand (ADR 0054). An array is shown right away, a
+   * promise — after waiting.
    */
   loadChildren?: (
     row: Row<any, any>,
-    /** `signal` прерывает отмена раскрытия (ADR 0153, §1). */
+    /** `signal` is aborted when the expand is cancelled (ADR 0153, §1). */
     context?: { signal: AbortSignal },
   ) => readonly unknown[] | PromiseLike<readonly unknown[]>
 }

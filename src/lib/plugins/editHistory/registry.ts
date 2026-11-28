@@ -23,26 +23,26 @@ import { editHistoryLabels } from './labels'
 export const EDIT_HISTORY_TOOLBAR_GROUP = 'history'
 
 export interface EditHistoryOptions {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
   /**
-   * Виды изменений, которые пишутся в историю (ADR 0222, §16): `'edit'`, `'paste'`, `'row'`, `'app'`…;
-   * не задано — все. Не записанное не отменяется.
+   * Change kinds recorded in the history (ADR 0222, §16): `'edit'`, `'paste'`, `'row'`, `'app'`…;
+   * unset means all. What isn't recorded can't be undone.
    */
   sources?: readonly EditHistorySource[]
-  /** Пишется ли изменение (§16): вместе со `sources` — запись, если согласны оба. */
+  /** Whether a change is recorded (§16): together with `sources` — recorded if both agree. */
   canRecordChange?: (change: EditHistoryChange) => boolean
-  /** Предел записей; старейшая уходит. По умолчанию 30. */
+  /** Entry limit; the oldest one goes away. 30 by default. */
   limit?: number
-  /** Ячеек во всех записях вместе; старейшие уходят. По умолчанию 50 000 (ADR 0223). */
+  /** Cells across all entries; the oldest go away. 50,000 by default (ADR 0223). */
   maxCells?: number
-  /** Ячейка изменилась извне после записи: пропустить (по умолчанию) или писать поверх. */
+  /** The cell changed from outside after the entry: skip it (default) or write over it. */
   conflict?: 'skip' | 'overwrite'
-  /** Кнопки «Отменить» и «Повторить» в тулбаре; `false` — без них. */
+  /** "Undo" and "Redo" buttons in the toolbar; `false` — none. */
   toolbar?: ToolbarPlacement | false
-  /** Пункты «Отменить» и «Повторить» в контекстном меню ячейки. По умолчанию `true`. */
+  /** "Undo" and "Redo" items in the cell context menu. `true` by default. */
   contextMenu?: boolean
-  /** Кнопка «История» в тулбаре; `false` — без неё. */
+  /** The "History" button in the toolbar; `false` — none. */
   historyPanel?: ToolbarPlacement | false
 }
 

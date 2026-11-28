@@ -37,33 +37,33 @@ export interface RowDragEnd {
   rowId: string
   dragIndex: number
   hoverIndex: number
-  /** Родитель после переноса; `undefined` — корень. */
+  /** Parent after the move; `undefined` — the root. */
   parentId?: string
-  /** Родитель до переноса. */
+  /** Parent before the move. */
   previousParentId?: string
-  /** Место среди сестёр после переноса. */
+  /** Position among siblings after the move. */
   index: number
-  /** Место среди сестёр до переноса (ADR 0222, §13). */
+  /** Position among siblings before the move (ADR 0222, §13). */
   previousIndex: number
-  /** Перенос сделала история правок: отмена или повтор (ADR 0222, §13). */
+  /** The move was made by the edit history: undo or redo (ADR 0222, §13). */
   source?: 'undo' | 'redo'
   /**
-   * Серверная группировка (ADR 0159, §5): значения колонок группировки группы после
-   * переноса — колонка → значение.
+   * Server grouping (ADR 0159, §5): the group's grouping column values after the move — column →
+   * value.
    */
   groupValues?: Record<string, unknown>
-  /** Значения колонок группировки группы до переноса. */
+  /** The group's grouping column values before the move. */
   previousGroupValues?: Record<string, unknown>
 }
 
 export interface RowDraggingHooks {
   /**
-   * Строка переставлена (ADR 0112): `dragIndex`/`hoverIndex` — позиции в показанных
-   * строках до перестановки, `parentId`/`index` — родитель и место среди сестёр после
-   * неё. Промис — ожидание на ручке; отказ ленивого переноса возвращает строку.
+   * A row was reordered (ADR 0112): `dragIndex`/`hoverIndex` are positions among the shown rows
+   * before the move, `parentId`/`index` are the parent and the position among siblings after it.
+   * A promise shows pending on the handle; a rejected lazy move returns the row.
    */
   onRowDragEnd: (props: RowDragEnd) => void | PromiseLike<unknown>
-  /** Перетаскивание завершилось без перестановки (ADR 0040, §1). */
+  /** The drag ended without reordering (ADR 0040, §1). */
   onRowDragCancel?: (end: {
     rowId: string
     reason: SessionCancelReason

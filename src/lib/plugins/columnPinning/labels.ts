@@ -2,13 +2,13 @@
 import { defineLabels } from '../../core/localization'
 
 export interface ColumnPinningLabels {
-  /** Тултип кнопки закрепления колонки */
+  /** Tooltip of the pin column button */
   pin: string
-  /** Тултип кнопки открепления колонки */
+  /** Tooltip of the unpin column button */
   unpin: string
-  /** Пункт меню / тумблер «закрепить слева» */
+  /** Menu item / toggle "pin left" */
   pinLeft: string
-  /** Пункт меню / тумблер «закрепить справа» */
+  /** Menu item / toggle "pin right" */
   pinRight: string
 }
 

@@ -2,13 +2,13 @@
 import { defineLabels } from '../../core/localization'
 
 export interface ServerRowModelLabels {
-  /** Объявление транзакции строк серверной модели: строки добавлены (ADR 0157) */
+  /** Announcement of a server row model transaction: rows added (ADR 0157) */
   announceRowsAdded: (count: number) => string
-  /** Объявление транзакции строк серверной модели: строки удалены (ADR 0157) */
+  /** Announcement of a server row model transaction: rows removed (ADR 0157) */
   announceRowsRemoved: (count: number) => string
-  /** Действие: загрузить блок строк */
+  /** Action: load a block of rows */
   actionLoadBlock: string
-  /** Действие: транзакция строк */
+  /** Action: a row transaction */
   actionRowTransaction: string
 }
 

@@ -10,7 +10,7 @@ import { neverInert } from '../../core/pluginDiagnostics'
 import { treeLinesBody } from './body'
 
 export interface TreeLinesOptions {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
 }
 
@@ -21,7 +21,7 @@ const treeLinesEntry = definePlugin<TreeLinesOptions>()({
   options: o => ({ enableTreeLines: o.enabled !== false }),
 })
 
-/** Ветки строк окна, слой в ячейке отступа и атрибут темы — вкладом в тело (ADR 0170, §5). */
+/** Branches of the window's rows, a layer in the indent cell and a theme attribute — as a body contribution (ADR 0170, §5). */
 export const treeLines = withBody(treeLinesEntry, treeLinesBody)
 
 /* eslint-disable @typescript-eslint/no-unused-vars -- generics карт обязаны

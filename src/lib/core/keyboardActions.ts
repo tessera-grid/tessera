@@ -12,34 +12,34 @@ import type { CellComponentProps, HeaderComponentProps } from './createSlots'
 import { type DebugActionSource, reportAction } from './debugActions'
 
 interface KeyboardActionBase<TCtx> {
-  /** Идентификатор; при свёртке дубли по id заменяются последним. */
+  /** Identifier; when folding, duplicates by id are replaced by the last one. */
   id: string
   /**
-   * Значения `KeyboardEvent.key` (`' '` — пробел) или сочетания в форме
-   * `keyComboOf` — `'Alt+Shift+ArrowUp'`; сочетания срабатывают только с `Alt`. Буква и
-   * цифра сочетания — по коду клавиши, на любой раскладке; регистр буквы не важен (ADR 0220).
+   * `KeyboardEvent.key` values (`' '` is space) or combinations in `keyComboOf` form —
+   * `'Alt+Shift+ArrowUp'`; combinations fire only with `Alt`. The letter or digit of a
+   * combination matches the key code, on any layout; letter case doesn't matter (ADR 0220).
    */
   keys: string[]
-  /** Сочетание и подпись для сводки клавиш (ADR 0232, KX18). */
+  /** Shortcut and label for the key summary (ADR 0232, KX18). */
   shortcut?: KeyboardShortcutDefinition
   /**
-   * Действие раскрывает/сворачивает строку: его вызывает и фокус на строке
-   * treegrid (`→`/`←`, ADR 0032, W16), не зная плагина-владельца.
+   * The action expands or collapses a row: focus on a treegrid row calls it too
+   * (`→`/`←`, ADR 0032, W16), without knowing the owner plugin.
    */
   expands?: boolean
-  /** Кто побеждает, если на одной клавише применимы несколько действий. По умолчанию `0`. */
+  /** Which action wins when several apply to the same key. `0` by default. */
   priority?: number
-  /** Применимо ли действие к этой ячейке. По умолчанию — всегда. */
+  /** Whether the action applies to this cell. Always by default. */
   visible?: (ctx: TCtx) => boolean
   run: (ctx: TCtx, event: ReactKeyboardEvent<HTMLElement>) => void
 }
 
-/** Действие на ячейке тела; контекст — `cell.getContext()`. */
+/** An action on a body cell; the context is `cell.getContext()`. */
 export interface CellKeyboardAction extends KeyboardActionBase<CellComponentProps> {
   scope: 'cell'
 }
 
-/** Действие на ячейке заголовка; контекст — `header.getContext()`. */
+/** An action on a header cell; the context is `header.getContext()`. */
 export interface HeaderKeyboardAction extends KeyboardActionBase<HeaderComponentProps> {
   scope: 'header'
 }

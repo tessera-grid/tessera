@@ -38,24 +38,24 @@ export interface ResizeSplitterProps {
   isResizing: boolean
   onResize: (event: unknown) => void
   onResizeEnd: (event: unknown) => void
-  /** Протяжка завершилась без результата (ADR 0040, §1). */
+  /** The resize drag ended without a result (ADR 0040, §1). */
   onResizeCancel: (reason: SessionCancelReason) => void
-  /** Escape во время протяжки — отменить её. */
+  /** Escape during the drag — cancel it. */
   onEscape: () => void
   onResetSize: (event: unknown) => void
-  /** Изменить ширину на `delta` px с клавиатуры или из меню. */
+  /** Changes the width by `delta` px from the keyboard or the menu. */
   onResizeBy: (delta: number) => void
-  /** Подогнать ширину по содержимому: колонку или все (ADR 0217). */
+  /** Fits the width to content: one column or all (ADR 0217). */
   onAutosize?: (source: 'pointer' | 'keyboard') => void
   onAutosizeAll?: (source: 'pointer' | 'keyboard') => void
   size: number
   minSize: number
-  /** `undefined` — без верхней границы. */
+  /** `undefined` — no upper bound. */
   maxSize?: number
   disabled?: boolean
-  /** Таблица — для объявления ошибки загрузки меню (ADR 0061). */
+  /** The table — to announce a menu load failure (ADR 0061). */
   table?: unknown
-  /** Колонка грипа — цель действий клавиш в канале действий (ADR 0125). */
+  /** The grip's column — the target of key actions in the debug-action channel (ADR 0125). */
   columnId?: string
 }
 

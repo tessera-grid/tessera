@@ -2,9 +2,9 @@
 // и держатся не меньше минимума — быстрый ответ не мигает, медленный не вспыхивает.
 
 export interface RefreshOptions {
-  /** Через сколько мс после `loading: 'refresh'` показать обновление. */
+  /** How many ms after `loading: 'refresh'` to show the refresh state. */
   delayMs?: number
-  /** Сколько мс показанное обновление держится хотя бы. */
+  /** Minimum ms a shown refresh state stays visible. */
   minDurationMs?: number
 }
 

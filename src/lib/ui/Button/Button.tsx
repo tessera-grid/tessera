@@ -20,21 +20,21 @@ export interface ButtonProps
     FailureProps,
     ButtonTooltipProps,
     ToneProps {
-  /** `outline` — с рамкой, на поверхности грида; `ghost` — без рамки, в поповерах. */
+  /** `outline` — with a border, on the grid surface; `ghost` — without a border, in popovers. */
   variant?: 'outline' | 'ghost'
-  /** Иконка перед подписью. */
+  /** Icon before the label. */
   icon?: ReactNode
-  /** Тултип кнопки. */
+  /** Button tooltip. */
   tooltip?: ReactNode
-  /** Выключенная остаётся в порядке фокуса (`aria-disabled`) — Base UI Button. */
+  /** A disabled button stays in the focus order (`aria-disabled`) — Base UI Button. */
   focusableWhenDisabled?: boolean
   children: ReactNode
 }
 
 /**
- * Кнопка с подписью (ADR 0097) на базе Base UI Button: скруглённый квадрат; размер,
- * иконка, форма и палитра — общие с `IconButton` токены (ADR 0098); ожидание и отказ —
- * дуга, как у кнопок кита (ADR 0127, ADR 0136).
+ * A button with a label (ADR 0097) built on Base UI Button: a rounded square; size, icon, shape
+ * and palette use the same tokens as `IconButton` (ADR 0098); pending and failure show as an arc,
+ * like the kit's other buttons (ADR 0127, ADR 0136).
  */
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (

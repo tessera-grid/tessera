@@ -8,9 +8,9 @@ import type { ToolbarPlacement } from '../core/toolbar'
 
 export type { ToolbarPlacement }
 
-/** Аргумент фабрики с кнопкой тулбара. */
+/** A factory argument with a toolbar button. */
 export interface ToolbarPlacementOption {
-  /** Место встроенной кнопки в тулбаре; `false` — без кнопки (ADR 0205). */
+  /** Position of the built-in button in the toolbar; `false` — no button (ADR 0205). */
   toolbar?: ToolbarPlacement | false
 }
 

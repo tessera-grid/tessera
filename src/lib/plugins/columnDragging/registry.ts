@@ -20,19 +20,19 @@ import type { ColumnDraggingHooks } from './types'
 import { columnDraggingLabels } from './labels'
 
 export interface ColumnDraggingOptions {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
   /**
-   * Колонка перенесена; промис — ожидание на ручке, отказ возвращает колонку к прежним
-   * соседям (ADR 0114).
+   * A column was moved; a promise shows pending on the handle, a rejection returns the column
+   * to its previous neighbors (ADR 0114).
    */
   onColumnDragEnd?: ColumnDraggingHooks['onColumnDragEnd']
   /**
-   * Откатывать перенос при отказе промиса `onColumnDragEnd`; по умолчанию `true`. `false` —
-   * клиент остаётся с новым порядком, расхождение с сервером допускается (ADR 0114).
+   * Revert the move when the `onColumnDragEnd` promise rejects; `true` by default. `false` — the
+   * client keeps the new order, a mismatch with the server is allowed (ADR 0114).
    */
   revertOnReject?: boolean
-  /** Перетаскивание отменено: Escape, бросок мимо, запрет на лету, колонка ушла (ADR 0040). */
+  /** The drag was cancelled: Escape, a drop outside, disallowed on the fly, the column went away (ADR 0040). */
   onColumnDragCancel?: ColumnDraggingHooks['onColumnDragCancel']
 }
 

@@ -5,7 +5,7 @@
 import { getActionColumnId } from '../../core/createColumns/actionColumnParams'
 import type { ColumnDef } from '../../types'
 
-/** Стабильный id колонки действий строки. */
+/** Stable id of the row actions column. */
 export const ROW_ACTIONS_COLUMN_ID = getActionColumnId('rowActions')
 
 export interface RowActionsOptions {

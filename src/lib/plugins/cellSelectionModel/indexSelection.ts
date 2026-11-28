@@ -25,7 +25,7 @@ import {
   type SelectionBounds,
 } from './selectionGeometry'
 
-/** Диапазон выделения: индексы строк-углов и их `id`, где строка известна (ADR 0180, §1). */
+/** A selection range: corner row indexes and their `id`s where the row is known (ADR 0180, §1). */
 export interface CellSelectionRange {
   anchorRowId?: string
   focusRowId?: string
@@ -33,7 +33,7 @@ export interface CellSelectionRange {
   focusRowIndex?: number
   anchorColumnId: string
   focusColumnId: string
-  /** Как диапазон меняет выделение диапазонов до него; по умолчанию `include`. */
+  /** How the range changes the ranges before it; `include` by default. */
   operation?: 'include' | 'exclude'
 }
 

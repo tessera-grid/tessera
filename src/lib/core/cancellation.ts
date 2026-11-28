@@ -7,7 +7,7 @@
 import { sourceOf } from './debugActions'
 import { logWarn } from '../util/logger'
 
-/** Вид ждущей операции — фильтр `table.cancelPending`. */
+/** Kind of pending operation — the `table.cancelPending` filter. */
 export type PendingKind =
   | 'menu'
   | 'server'
@@ -27,8 +27,8 @@ export type CancelSource = 'pointer' | 'keyboard' | 'api'
 export interface CancelPendingFilter {
   kind?: PendingKind
   /**
-   * Id действия меню, формата выгрузки, строки ленивых детей, ячейки сохранения или вид
-   * серверного действия.
+   * Id of a menu action, export format, lazy-children row, saving cell, or the kind of a
+   * server action.
    */
   id?: string
 }

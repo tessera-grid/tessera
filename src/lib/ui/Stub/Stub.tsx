@@ -23,14 +23,14 @@ export interface StubProps extends Omit<
   HTMLAttributes<HTMLDivElement>,
   'title' | 'children'
 > {
-  /** Иллюстрация или иконка; не умещается целиком вместе с текстом — скрыта. */
+  /** Illustration or icon; hidden when it doesn't fit entirely together with the text. */
   media?: ReactNode
   title: string
-  /** Подробности: не больше двух строк, полный текст в тултипе. */
+  /** Details: no more than two lines, the full text in a tooltip. */
   description?: string
-  /** Действие — кнопка кита. */
+  /** Action — a kit button. */
   action?: ReactNode
-  /** `compact` — для поповеров и панелей: меньше отступы, кегль и иллюстрация. */
+  /** `compact` — for popovers and panels: smaller spacing, font size and illustration. */
   size?: 'default' | 'compact'
 }
 

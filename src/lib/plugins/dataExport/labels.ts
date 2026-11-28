@@ -2,35 +2,35 @@
 import { defineLabels } from '../../core/localization'
 
 export interface DataExportLabels {
-  /** Кнопка тулбара «Экспорт» (`export`) */
+  /** The "Export" toolbar button (`export`) */
   export: string
-  /** Заголовок оси «Строки» панели экспорта */
+  /** Title of the "Rows" axis of the export panel */
   exportRows: string
-  /** Заголовок оси «Колонки» панели экспорта */
+  /** Title of the "Columns" axis of the export panel */
   exportColumns: string
-  /** Заголовок оси «Формат» панели экспорта */
+  /** Title of the "Format" axis of the export panel */
   exportFormat: string
-  /** Доступное имя ряда быстрых наборов панели экспорта */
+  /** Accessible name of the export panel's preset row */
   exportPresets: string
-  /** Кнопка «Выгрузить» в панели экспорта */
+  /** The "Export" button in the export panel */
   exportRun: string
-  /** Ось «Строки»: весь `data` в исходном порядке */
+  /** "Rows" axis: the whole `data` in source order */
   exportAll: string
-  /** Ось «Строки»: с учётом перечисленного — список из `exportViewSorting` и `exportViewFiltering` */
+  /** "Rows" axis: as shown — a list from `exportViewSorting` and `exportViewFiltering` */
   exportView: (features: string[]) => string
   exportViewSorting: string
   exportViewFiltering: string
-  /** Ось «Строки»: текущая страница */
+  /** "Rows" axis: the current page */
   exportPage: string
-  /** Ось «Строки»: выбранные строки */
+  /** "Rows" axis: selected rows */
   exportSelected: string
-  /** Ось «Строки» при бесконечной прокрутке без серверной выгрузки: загруженные строки (ADR 0081) */
+  /** "Rows" axis with infinite scroll and no server export: loaded rows (ADR 0081) */
   exportLoaded: (count: number) => string
-  /** Ось «Колонки»: видимые колонки */
+  /** "Columns" axis: visible columns */
   exportColumnsVisible: string
-  /** Ось «Колонки»: все колонки, включая скрытые */
+  /** "Columns" axis: all columns, including hidden ones */
   exportColumnsAll: string
-  /** Действие: выбрать формат, оси или набор выгрузки */
+  /** Action: choose an export format, axes or preset */
   actionChooseSettings: string
 }
 

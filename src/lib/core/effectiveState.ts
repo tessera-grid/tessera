@@ -16,17 +16,17 @@ import { functionalUpdate } from '@tanstack/react-table'
 import { useIsomorphicLayoutEffect } from '../util/useIsomorphicLayoutEffect'
 import { shallowEqual } from './reactivity'
 
-/** Текущая свёртка набора (опции, действия слотов) — свежее, чем опции `table`. */
+/** The current fold of the plugin set (options, slot actions) — fresher than the `table` options. */
 export interface NarrowContext {
   options: Record<string, unknown>
   slotActions: Partial<Record<string, readonly unknown[]>>
 }
 
 /**
- * Сужение среза. `table` — экземпляр таблицы или `null` (ещё не создан). Возвращает то же
- * значение, если сужать нечего; `undefined` — без таблицы не посчитать. Итог от того же
- * значения ядро сравнивает по полям: значение, чей смысл не в полях (прокси, символы), —
- * один объект на одно сохранённое значение (ADR 0171, §1).
+ * Narrows a slice. `table` is the table instance or `null` (not created yet). Returns the same
+ * value when there is nothing to narrow; `undefined` means it can't be computed without a table.
+ * The core compares a result from the same value by fields: a value whose meaning isn't in its
+ * fields (proxies, symbols) must be one object per stored value (ADR 0171, §1).
  */
 export type NarrowState = (
   value: any,

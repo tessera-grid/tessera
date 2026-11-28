@@ -1,14 +1,14 @@
 export interface InfiniteScrollLoadContext {
-  /** Отменяется, когда загрузка устарела: сменились сортировка, фильтры или поиск. */
+  /** Aborted when the load is stale: sorting, filters or search changed. */
   signal: AbortSignal
-  /** Корневых строк в `data` на момент запроса — смещение следующего блока. */
+  /** Root rows in `data` at the time of the request — the offset of the next block. */
   loaded: number
 }
 
 export interface InfiniteScrollHooks {
   /**
-   * Попросить следующий блок: приложение дописывает его в конец `data`. Промис —
-   * ожидание (хвост скелет-строк) и отказ (строка ошибки с повтором).
+   * Requests the next block: the application appends it to the end of `data`. A promise means
+   * pending (a tail of skeleton rows) and failure (an error row with retry).
    */
   onLoadMore: (context: InfiniteScrollLoadContext) => Promise<void> | void
 }

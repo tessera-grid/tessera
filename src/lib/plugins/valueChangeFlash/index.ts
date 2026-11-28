@@ -12,9 +12,9 @@ import { watchTotalsWith } from './totals'
 import { followEnteringRows, ID, valueChangeFlashBody } from './watch'
 
 export interface ValueChangeFlashOptions {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
-  /** Вид колонок без своего `changeFlash`; по умолчанию `true` — вспыхивают все колонки данных. */
+  /** Mode for columns without their own `changeFlash`; `true` by default — all data columns flash. */
   columnDefault?: ValueChangeFlashHooks['columnDefault']
 }
 

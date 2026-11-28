@@ -2,9 +2,9 @@
 import { defineLabels } from '../../core/localization'
 
 export interface DataExportModelLabels {
-  /** Действие: выгрузка данных (`exportData`) */
+  /** Action: export data (`exportData`) */
   exportData: string
-  /** Отказ выгрузки серверной модели: строк больше предела `maxLoadedRows` (ADR 0190) */
+  /** Server row model export refused: more rows than the `maxLoadedRows` limit (ADR 0190) */
   exportTooManyRows: (max: number) => string
 }
 

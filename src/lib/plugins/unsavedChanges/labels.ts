@@ -2,23 +2,23 @@
 import { defineLabels } from '../../core/localization'
 
 export interface UnsavedChangesLabels {
-  /** Пульт черновиков (ADR 0178, §8): кнопка тулбара и заголовок поповера. */
+  /** Unsaved-changes panel (ADR 0178, §8): the toolbar button and the popover title. */
   unsavedChanges: string
-  /** Кнопка пульта с числом черновиков. */
+  /** Panel button with the number of drafts. */
   unsavedChangesButton: (count: number) => string
-  /** Пустой пульт. */
+  /** Empty panel. */
   unsavedChangesEmpty: string
   unsavedChangesEmptyDescription: string
-  /** Кнопки записи пульта. */
+  /** Buttons of a panel entry. */
   draftShow: string
   draftApply: string
   draftDiscard: string
-  /** Кнопки внизу пульта. */
+  /** Buttons at the bottom of the panel. */
   draftApplyAll: string
   draftDiscardAll: string
-  /** Подсказка точки записи (ADR 0224). */
+  /** Hint of an entry's dot (ADR 0224). */
   markHint: string
-  /** Прокрутка к цели записи не удалась (ADR 0227, §7). */
+  /** Scrolling to the entry's target failed (ADR 0227, §7). */
   targetNotFound: string
 }
 

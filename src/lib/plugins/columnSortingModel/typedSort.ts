@@ -95,7 +95,7 @@ export const typedSortFn = (column: TypedSortColumn) =>
     },
   } as never)
 
-/** Колонке с типом без своей функции сортировки ставит сортировку по типу. */
+/** Gives a typed column with no sort function of its own sorting by type. */
 export const typedSortFeature = {
   initColumnInstanceData: (column: TypedSortColumn) => {
     const { columnDef } = column

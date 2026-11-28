@@ -1,7 +1,7 @@
 export interface ColumnVisibilityHooks {
   /**
-   * Пользователь показал или скрыл колонки из меню. Для группы и «Показать все» —
-   * один вызов со всеми затронутыми листьями.
+   * The user showed or hid columns from the menu. For a group and "Show all" — one call with all
+   * affected leaves.
    */
   onToggleColumnVisibility: (columnIds: string[], visible: boolean) => void
 }

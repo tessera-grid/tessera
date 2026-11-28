@@ -10,7 +10,7 @@ import type { CellComponentProps, HeaderComponentProps } from '../createSlots'
 import type { NamedAction } from '../actions'
 import type { FlashTarget } from '../highlights/highlightFeature'
 
-/** Все слоты, в которых может жить действие (шапка + ячейка + строка действий). */
+/** All slots an action can live in (header + cell + row actions). */
 export type SlotName =
   | 'leftHeaderSlot'
   | 'rightHeaderSlot'
@@ -18,7 +18,7 @@ export type SlotName =
   | 'rightCellSlot'
   | 'actionRowSlot'
 
-/** Слоты заголовка (подмножество `SlotName`). */
+/** Header slots (a subset of `SlotName`). */
 export type HeaderActionSlot = 'leftHeaderSlot' | 'rightHeaderSlot'
 
 /**
@@ -26,204 +26,204 @@ export type HeaderActionSlot = 'leftHeaderSlot' | 'rightHeaderSlot'
  * контекстного меню (ADR 0030). Достаточно для `resolveMenuItems`; инлайн-подача
  * (кнопка в слоте) и `slot` живут в наследнике `SlotAction`.
  */
-/** Тон действия (ADR 0206). */
+/** Action tone (ADR 0206). */
 export type ActionTone = 'danger'
 
 export interface MenuAction<TCtx = any> extends NamedAction<TCtx> {
-  /** Уникальный id действия — ключ дедупликации при сборке и имя действия справочника. */
+  /** Unique action id — the deduplication key when collecting, and the catalog action name. */
   id: string
-  /** Порядок: число — индекс вставки, `'last'`/`undefined` — в конец. */
+  /** Order: a number is the insertion index, `'last'`/`undefined` puts it at the end. */
   order?: number | 'last'
-  /** Иконка действия (инлайн-кнопка и строка меню). */
+  /** Action icon (inline button and menu item). */
   icon: (ctx: TCtx) => ReactNode
   /**
-   * Обработчик выбора (клик по инлайн-кнопке/пункту). `event` — для модификаторов.
-   * Промис — долгое действие: ожидание и отказ видны на кебабе и пункте (ADR 0078).
+   * Selection handler (a click on the inline button or menu item). `event` is for modifiers.
+   * A promise is a long action: pending and failure show on the kebab and the item (ADR 0078).
    */
   onSelect: (
     ctx: TCtx,
     event?: MouseEvent<HTMLButtonElement>,
-    /** `signal` прерывается отменой действия человеком или приложением (ADR 0153). */
+    /** `signal` is aborted when the user or the application cancels the action (ADR 0153). */
     context?: { signal: AbortSignal },
   ) => void | Promise<unknown>
-  /** Применимо ли действие в этом контексте (`false` убирает целиком). */
+  /** Whether the action applies in this context (`false` removes it entirely). */
   visible?: (ctx: TCtx) => boolean
   /**
-   * Заблокировано ли действие (пункт неактивен, но видим) и почему. Промис — проверка
-   * в меню при наведении на кебаб и открытии; `signal` прерывается закрытием, отказ
-   * промиса — проверка не удалась (ADR 0078).
+   * Whether the action is disabled (the item is inactive but visible) and why. A promise is
+   * checked in the menu on kebab hover and open; `signal` is aborted on close, a rejected
+   * promise means the check failed (ADR 0078).
    */
   disabled?: (
     ctx: TCtx,
     signal: AbortSignal,
   ) => DisabledResult | Promise<DisabledResult>
   /**
-   * Цель итога (ADR 0152): отказ промиса `onSelect` вспыхивает на ней, пока он ждёт — её
-   * ячейки несут `aria-busy`. `defaultTarget` — цель по умолчанию: у контекстного меню —
-   * ячейка или выделение, у кебабов и инлайн-кнопок — нет. `false` — без цели; `'table'` —
-   * действие меняет всю таблицу: свечение под шапкой, отказ — плашкой (ADR 0155, §2).
+   * Outcome target (ADR 0152): a rejection of the `onSelect` promise flashes on it; while it is
+   * pending, its cells carry `aria-busy`. `defaultTarget` is the default target: the cell or the
+   * selection for the context menu, none for kebabs and inline buttons. `false` — no target;
+   * `'table'` — the action changes the whole table: a glow under the header, a failure shows as
+   * an alert (ADR 0155, §2).
    */
   target?: (
     ctx: TCtx,
     defaultTarget: FlashTarget | readonly FlashTarget[] | undefined,
   ) => FlashTarget | readonly FlashTarget[] | false | 'table'
-  /** Текст отказа действия или проверки; без него — текст ошибки или подпись. */
+  /** Failure text of the action or the check; without it — the error text or the label. */
   errorMessage?: (
     ctx: TCtx,
     error: unknown,
     labels: TableLabels,
   ) => string | undefined
-  /** Состояние-тумблер (закреплено/отсортировано/сгруппировано). */
+  /** Toggle state (pinned, sorted, grouped). */
   active?: (ctx: TCtx) => boolean
-  /** Есть неприменённое (ADR 0178, §3): точка на кнопке, кнопка держится в ряду. */
+  /** Has something not applied (ADR 0178, §3): a dot on the button, the button stays in the row. */
   draft?: (ctx: TCtx) => boolean
   /**
-   * Кнопка видна без наведения и держится в ряду, без отметки на ней: её цель уже выделена
-   * своим видом (откат строки до сохранения, ADR 0178, §7).
+   * The button is visible without hover and stays in the row, without a mark on it: its target
+   * is already highlighted by its own look (reverting a row before saving, ADR 0178, §7).
    */
   shown?: (ctx: TCtx) => boolean
-  /** Разворот действия в НЕСКОЛЬКО пунктов меню (напр. сортировка asc/desc/сброс). */
+  /** Expands the action into SEVERAL menu items (for example sorting asc/desc/clear). */
   menuItems?: (ctx: TCtx, labels: TableLabels) => HeaderMenuItem[]
-  /** Необязательный заголовок подгруппы действия в меню (`Menu.GroupLabel`). */
+  /** Optional title of the action's subgroup in the menu (`Menu.GroupLabel`). */
   menuGroupLabel?: (labels: TableLabels) => string
   /**
-   * Раздел: пункт ведёт на следующий уровень меню, `onSelect` не вызывается
-   * (ADR 0079).
+   * A section: the item opens the next menu level, `onSelect` is not called (ADR 0079).
    */
   submenu?: (ctx: TCtx, labels: TableLabels) => MenuSection<TCtx>
   /**
-   * Значение пункта-раздела мелким текстом перед шевроном («Pin … Left»); у обычного пункта —
-   * вторая строка под подписью: что будет после выбора (ADR 0204, HT5).
+   * Value of a section item in small text before the chevron ("Pin … Left"); for a regular item —
+   * a second line under the label: what happens after selecting it (ADR 0204, HT5).
    */
   hint?: (ctx: TCtx, labels: TableLabels) => string | undefined
-  /** Сочетание в форме `Mod+Z` (Mod — Cmd на Apple, Ctrl на остальных; ADR 0232, KX14). */
+  /** A shortcut like `Mod+Z` (Mod is Cmd on Apple and Ctrl elsewhere; ADR 0232, KX14). */
   shortcut?: string
   /**
-   * `false` — выбор не закрывает меню (переопределяет умолчание раздела); пункт с
-   * `active` становится флажком меню (ADR 0079).
+   * `false` — selecting doesn't close the menu (overrides the section default); an item with
+   * `active` becomes a menu checkbox (ADR 0079).
    */
   closeOnSelect?: boolean
   /**
-   * Тон (ADR 0206): `'danger'` — действие безвозвратно теряет данные пользователя; пункт меню
-   * и кнопка слота красные и в покое. Функция — тон по контексту.
+   * Tone (ADR 0206): `'danger'` — the action irreversibly loses user data; the menu item and the
+   * slot button are red even at rest. A function gives the tone by context.
    */
   tone?: ActionTone | ((ctx: TCtx) => ActionTone | undefined)
 }
 
-/** Раздел меню (ADR 0079): пункты сразу или промисом — тогда со скелетом. */
+/** A menu section (ADR 0079): items right away, or a promise — then with a skeleton. */
 export interface MenuSection<TCtx = any> {
   title: string
-  /** Умолчание для пунктов раздела: `false` — выбор не закрывает меню. */
+  /** Default for the section's items: `false` — selecting doesn't close the menu. */
   closeOnSelect?: boolean
   items:
     MenuAction<TCtx>[] | ((signal: AbortSignal) => Promise<MenuAction<TCtx>[]>)
 }
 
 /**
- * Почему действие заблокировано (ADR 0078): `done` — уже сделано (галочка),
- * `forbidden` — нельзя в принципе, например нет прав (замок). `reason` — текст тултипа.
+ * Why the action is disabled (ADR 0078): `done` — already done (a check mark), `forbidden` —
+ * not allowed at all, for example no permission (a lock). `reason` is the tooltip text.
  */
 export interface DisabledState {
   kind: 'done' | 'forbidden'
   reason?: string
 }
 
-/** Ответ `disabled`: `true` — запрещено без текста. */
+/** The `disabled` answer: `true` means forbidden without a text. */
 export type DisabledResult = boolean | DisabledState
 
 /**
- * Декларативное действие слота — единственный источник правды для кнопки: иконка/
- * подпись/обработчик и признаки. Ядро решает подачу (инлайн иконка-кнопка или
- * строка кебаб-меню), поэтому плагин описывает действие данными, а не JSX.
+ * A declarative slot action — the single source of truth for a button: icon, label, handler
+ * and flags. The core decides how to show it (an inline icon button or a kebab-menu item), so
+ * a plugin describes the action as data, not JSX.
  */
 export interface SlotAction<
   TCtx = any,
   TSlot extends SlotName = SlotName,
 > extends MenuAction<TCtx> {
-  /** Слот, в котором отрисовывается действие. */
+  /** The slot the action renders in. */
   slot: TSlot
-  /** Доступное имя ИНЛАЙН-кнопки, если отличается от тултипа `label`. */
+  /** Accessible name of the INLINE button, when it differs from the `label` tooltip. */
   ariaLabel?: (ctx: TCtx, labels: TableLabels) => string
-  /** Может ли действие уезжать в кебаб при схлопывании. По умолчанию `true`. */
+  /** Whether the action can move into the kebab when collapsing. `true` by default. */
   collapsible?: boolean
   /**
-   * `'menu'` — только строка кебаба: инлайн не рисуется; вызванный им кебаб считается
-   * в пороге одной кнопкой; без плагина-меню не показывается. По умолчанию `'auto'`.
+   * `'menu'` — only a kebab item, no inline button; the kebab it causes counts as one button
+   * toward the threshold; not shown without a menu plugin. `'auto'` by default.
    */
   placement?: 'auto' | 'menu'
-  /** Класс инлайн-кнопки — escape для плагин-специфичной подачи. */
+  /** Class of the inline button — an escape hatch for plugin-specific presentation. */
   className?: (ctx: TCtx) => string | undefined
-  /** Число в бабле включённой ИНЛАЙН-кнопки вместо точки (ADR 0129). */
+  /** Number in the badge of an active INLINE button instead of a dot (ADR 0129). */
   count?: (ctx: TCtx) => number | undefined
-  /** Показывать ли ИНЛАЙН-подачу как мини-меню (поповер) из `menuItems`. */
+  /** Whether to show the INLINE presentation as a mini menu (popover) from `menuItems`. */
   inlineAsMenu?: (ctx: TCtx) => boolean
   /**
-   * Действие с панелью: инлайн-кнопка и пункт кебаба открывают поповер с этим
-   * содержимым (у кебаба — у его кнопки), `onSelect` не вызывается.
+   * An action with a panel: the inline button and the kebab item open a popover with this
+   * content (for the kebab — at its button), `onSelect` is not called.
    */
   panel?: (ctx: TCtx, controls: ActionPanelControls) => ReactNode
   /**
-   * Загрузка содержимого `panel` (ленивые модули): поповер открывается после неё,
-   * а начинается она уже при наведении и фокусе кнопки.
+   * Loads the `panel` content (lazy modules): the popover opens after it, and loading starts
+   * already on hover and focus of the button.
    */
   preload?: (ctx: TCtx) => Promise<unknown>
 }
 
-/** Управление поповером действия с панелью. */
+/** Controls of the popover of an action with a panel. */
 export interface ActionPanelControls {
   close: () => void
-  /** Элемент, получающий фокус при открытии; без него — первый фокусируемый. */
+  /** Element that gets focus on open; without it — the first focusable one. */
   initialFocusRef: RefObject<HTMLElement | null>
 }
 
 /**
- * Сводка выделения ячеек для контекстного меню (ADR 0030). Позволяет пункту
- * гейтить себя по одиночному/множественному выбору без развилки «меню A vs B».
+ * Cell selection summary for the context menu (ADR 0030). Lets an item gate itself on single
+ * or multiple selection without a "menu A vs B" branch.
  */
 export interface CellSelectionSummary {
-  /** Сколько ячеек выделено. */
+  /** How many cells are selected. */
   count: number
-  /** Ровно одна выделенная ячейка. */
+  /** Exactly one cell is selected. */
   isSingle: boolean
-  /** Выделено больше одной. */
+  /** More than one cell is selected. */
   isMultiple: boolean
-  /** Ячейка под курсором входит в выделение. */
+  /** The cell under the pointer is part of the selection. */
   isInSelection: boolean
 }
 
-/** Контекст пункта контекстного меню: контекст ячейки под курсором + сводка выбора. */
+/** Context of a context-menu item: the context of the cell under the pointer + the selection summary. */
 export interface ContextMenuContext extends CellComponentProps {
-  /** Сводка текущего выделения ячеек (пусто, если cellSelection не подключён). */
+  /** Summary of the current cell selection (empty when cellSelection isn't used). */
   selection: CellSelectionSummary
 }
 
-/** Действие контекстного меню (ADR 0030): дескриптор меню без слота/инлайн-подачи. */
+/** A context-menu action (ADR 0030): a menu descriptor without a slot or inline presentation. */
 export type ContextMenuAction = MenuAction<ContextMenuContext>
 
-/** Действие в слоте ЗАГОЛОВКА колонки. */
+/** An action in a column HEADER slot. */
 export type HeaderAction = SlotAction<HeaderComponentProps, HeaderActionSlot>
 
-/** Действие в слоте действий СТРОКИ. */
+/** An action in a ROW actions slot. */
 export type RowAction = SlotAction<CellComponentProps, 'actionRowSlot'>
 
 /**
- * Разрешённый пункт кебаб-меню (результат `SlotAction.menuItems`): поля уже
- * вычислены с учётом `ctx`/`labels`.
+ * A resolved kebab-menu item (the result of `SlotAction.menuItems`): fields are already
+ * computed for `ctx`/`labels`.
  */
 export interface HeaderMenuItem {
-  /** Уникальный id пункта в пределах подгруппы. */
+  /** Unique item id within the subgroup. */
   id: string
-  /** Текст пункта и `aria-label`. */
+  /** Item text and `aria-label`. */
   label: string
-  /** Иконка пункта. */
+  /** Item icon. */
   icon?: ReactNode
-  /** Обработчик выбора пункта. */
+  /** Item selection handler. */
   onSelect: () => void
-  /** Заблокирован ли пункт. */
+  /** Whether the item is disabled. */
   disabled?: boolean
-  /** Отмечен ли пункт (галочка). */
+  /** Whether the item is checked (a check mark). */
   active?: boolean
-  /** Пункты раздела: пункт открывает их, а не выполняется (ADR 0186, §5). */
+  /** Section items: the item opens them instead of running (ADR 0186, §5). */
   items?: HeaderMenuItem[]
 }
 
@@ -232,16 +232,16 @@ export type SlotActions = Record<SlotName, SlotAction[]>
 
 /** Конфиг схлопывания ОДНОГО слота в кебаб-меню (разрешённый, per-slot). */
 export interface SlotMenuConfig {
-  /** `auto` — по порогу; `always` — всегда, игнорируя счётчик. */
+  /** `auto` — by threshold; `always` — always, ignoring the count. */
   mode: 'auto' | 'always'
-  /** Порог схлопывания для `auto`. */
+  /** Collapse threshold for `auto`. */
   threshold: number
 }
 
 /** Карта конфигов меню по слотам (ключ = слот; отсутствие = кебаб выключен). */
 export type SlotActionMenu = Partial<Record<SlotName, SlotMenuConfig>>
 
-/** Декларация плагина-меню в записи реестра: на какие слоты распространить кебаб. */
+/** A menu plugin's declaration in a registry entry: which slots get the kebab menu. */
 export interface ActionMenuDeclaration extends SlotMenuConfig {
   slots: SlotName[]
 }

@@ -17,11 +17,11 @@ import { preGroupedModelOf } from '../../shared/rowModels/filteredRowModel'
 import { logWarn } from '../../util/logger'
 
 export interface ColumnTotalsOptions {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
   /**
-   * Итоги колонок, которые знает приложение (обычно сервер): показываются вместо подсчёта
-   * плагина, текстом по типу колонки (ADR 0229, §6).
+   * Column totals the application knows (usually from the server): shown instead of the plugin's
+   * computation, as text by the column type (ADR 0229, §6).
    */
   totals?: Record<string, unknown>
 }

@@ -78,9 +78,9 @@ type CountKey = {
 }[FunctionKey]
 
 /**
- * Словарь подписей приложения: значение — строка-шаблон с `{имя}` или функция, как в
- * `TableLabels`; у подписей с `count` — ещё ключи форм слова `<ключ>_<форма>`; подписи
- * владельцев — ключами `<владелец>.<ключ>` (ADR 0182, §8).
+ * The application's label dictionary: a value is a template string with `{name}` or a function,
+ * as in `TableLabels`; labels with `count` also have word-form keys `<key>_<form>`; owner labels
+ * use `<owner>.<key>` keys (ADR 0182, §8).
  */
 export type LabelDictionary = {
   [K in LabelKey]?: TableLabels[K] | string
@@ -89,9 +89,9 @@ export type LabelDictionary = {
 } & PluginDictionary
 
 /**
- * Словарь без ключей, которых нет в `LabelDictionary`: лишнее свойство TypeScript отмечает
- * только у литерала, а так — и у JSON-модуля (ADR 0182, AN21). Тип с произвольными ключами
- * (`Record<string, string>`) проходит: его проверяет таблица в разработке.
+ * A dictionary without keys missing from `LabelDictionary`: TypeScript flags an excess property
+ * only on a literal; this flags it on a JSON module too (ADR 0182, AN21). A type with arbitrary
+ * keys (`Record<string, string>`) passes: the table checks it in development.
  */
 export type ExactLabelDictionary<D> = D & {
   [K in Exclude<keyof D, keyof LabelDictionary>]: string extends K

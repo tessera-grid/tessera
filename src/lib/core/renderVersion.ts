@@ -23,8 +23,8 @@ export const usePluginRenderVersionAtom = (): RenderVersionAtom =>
   useContext(PluginRenderVersionContext)
 
 /**
- * Предикат из `refreshOn` при отрисовке (ADR 0193, RP1): `read` вызывается в рендере и после
- * каждой новой версии; компонент перерисовывается, только если ответ сменился (`Object.is`).
+ * A `refreshOn` predicate at render time (ADR 0193, RP1): `read` is called during render and
+ * after each new version; the component re-renders only when the answer changes (`Object.is`).
  */
 export const usePredicateResult = <T>(read: () => T): T =>
   useSelector(useContext(PluginRenderVersionContext), () => read(), {

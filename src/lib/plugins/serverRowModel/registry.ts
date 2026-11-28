@@ -17,17 +17,17 @@ import type { ServerRowModelHooks } from './types'
 import { serverRowModelLabels } from './labels'
 
 export interface ServerRowModelOptions {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
-  /** Загрузить строки `[start, end)`; читается живо. */
+  /** Loads rows `[start, end)`; read live. */
   getRows?: ServerRowModelHooks['getRows']
-  /** Строк в блоке; договор на время жизни таблицы. */
+  /** Rows per block; fixed for the table's lifetime. */
   blockSize?: number
-  /** Сколько блоков держать в кэше; давно не нужные сверх него вытесняются. */
+  /** How many blocks to keep in the cache; long-unused ones beyond it are evicted. */
   maxBlocks?: number
-  /** Строк в группе — из строки-группы ответа (ADR 0144); читается живо. */
+  /** Rows in a group — from the group row of the response (ADR 0144); read live. */
   getGroupChildCount?: ServerRowModelHooks['getGroupChildCount']
-  /** Строк данных в группе для подписи (ADR 0184); читается живо. */
+  /** Data rows in a group for its label (ADR 0184); read live. */
   getGroupRowCount?: ServerRowModelHooks['getGroupRowCount']
 }
 

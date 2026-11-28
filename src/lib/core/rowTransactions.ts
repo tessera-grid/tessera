@@ -11,23 +11,23 @@ import { positionOf } from './rowPosition'
 import { rowsOf } from './rowEngine/rows'
 
 export interface RowTransaction<TData = any> {
-  /** Новые строки; без `index` — в конец уровня (на сервере — перезапрос окна). */
+  /** New rows; without `index` — at the end of the level (on the server — the window is requested again). */
   add?: TData[]
-  /** Место первой новой строки на уровне. */
+  /** Position of the first new row on the level. */
   index?: number
-  /** Строки с новыми данными — по их id. */
+  /** Rows with new data — by their id. */
   update?: TData[]
-  /** id удаляемых строк. */
+  /** Ids of the rows to remove. */
   remove?: string[]
-  /** Ветка, в которой меняются строки; нет — корни. */
+  /** The branch where rows change; none means the roots. */
   parentId?: string
-  /** Итог ветки после транзакции, если его знает приложение; клиенту не нужен. */
+  /** The branch total after the transaction, if the application knows it; the client doesn't need it. */
   rowCount?: number
 }
 
 /**
- * Итог транзакции: применена, окно перезапрошено (сервер), ветки нет, или применить
- * нельзя — в клиентском режиме без `onDataChange`.
+ * Transaction result: applied, the window was requested again (server), the branch is missing,
+ * or it can't be applied — in client mode without `onDataChange`.
  */
 export type RowTransactionResult =
   'applied' | 'refetch' | 'branchNotLoaded' | 'unavailable'

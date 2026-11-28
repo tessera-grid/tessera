@@ -2,11 +2,11 @@
 import { defineLabels } from '../../core/localization'
 
 export interface QuickSearchLabels {
-  /** Поле быстрого поиска в тулбаре (`quickSearch`): плейсхолдер и доступное имя */
+  /** Quick search field in the toolbar (`quickSearch`): placeholder and accessible name */
   search: string
-  /** Подсказка поиска: подписи колонок, по которым он идёт (ADR 0053) */
+  /** Search hint: labels of the columns it searches (ADR 0053) */
   searchColumnsHint: (columns: string[]) => string
-  /** Подсказка поиска, когда искать не по чему */
+  /** Search hint when there is nothing to search */
   searchNoColumns: string
 }
 

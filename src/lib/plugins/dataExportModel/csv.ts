@@ -6,9 +6,9 @@ import { toExportText } from './exportData'
 import type { ExportData, ExportFormat } from './types'
 
 export interface CsvFormatOptions {
-  /** UTF-8 BOM в начале файла: без него Excel читает не-ASCII как ANSI. По умолчанию `true`. */
+  /** UTF-8 BOM at the start of the file: without it Excel reads non-ASCII as ANSI. `true` by default. */
   bom?: boolean
-  /** Префикс `'` текстовым полям, которые Excel выполнил бы как формулу. По умолчанию `true`. */
+  /** `'` prefix for text fields Excel would run as a formula. `true` by default. */
   sanitizeFormulas?: boolean
 }
 

@@ -51,10 +51,10 @@ import { timeSlicer, yieldToMain } from '../../util/timeSlice'
 
 export const ID = 'editHistory'
 
-/** Запись приложения (ADR 0222, §12). */
+/** An application entry (ADR 0222, §12). */
 export interface AppHistoryEntry {
   label: string
-  /** Цель вспышки и выделения. */
+  /** Target of the flash and the selection. */
   target?: HighlightTarget
   undo: (context: { signal: AbortSignal }) => unknown
   redo: (context: { signal: AbortSignal }) => unknown
@@ -63,8 +63,8 @@ export interface AppHistoryEntry {
 export type EditHistorySource = CellsWritten['source'] | 'app'
 
 /**
- * Изменение, которое история может записать (ADR 0222, §16): вид, ячейки, строки и перенос; у
- * записи приложения — её подпись.
+ * A change the history can record (ADR 0222, §16): the kind, cells, rows and a move; an
+ * application entry has its label.
  */
 export interface EditHistoryChange {
   source: Exclude<EditHistorySource, 'undo' | 'redo' | 'apply'>
@@ -74,25 +74,25 @@ export interface EditHistoryChange {
   label?: string
 }
 
-/** Запись истории для приложения и попапа. */
+/** A history entry for the application and the popup. */
 export interface EditHistoryEntry {
   id: string
-  /** Подпись одной строкой: действие и цель. */
+  /** One-line label: the action and the target. */
   label: string
-  /** Действие записи — первая строка пункта попапа. */
+  /** The entry's action — the first line of the popup item. */
   action: string
-  /** Цель — ячейка, строка или число ячеек — вторая строка пункта. */
+  /** The target — a cell, a row or a number of cells — the second line of the item. */
   detail?: string
   source: EditHistorySource
   time: number
-  /** Ячеек в записи; у записи приложения — 0. */
+  /** Cells in the entry; 0 for an application entry. */
   cells: number
   target?: HighlightTarget
-  /** Изменения записи ещё не применены — у ячеек и строк есть черновики (§14). */
+  /** The entry's changes are not applied yet — cells and rows have drafts (§14). */
   unsaved: boolean
 }
 
-/** «Применить» после записи `after`: разделитель списка, не шаг (§14). */
+/** "Apply" after entry `after`: a list separator, not a step (§14). */
 export interface EditHistoryApplied {
   after: string
   count: number
@@ -117,12 +117,12 @@ export const EMPTY_SLICE: EditHistorySlice = {
 }
 
 export interface EditHistoryState {
-  /** От старых к новым. */
+  /** From oldest to newest. */
   entries: readonly EditHistoryEntry[]
-  /** Число выполненных записей: `entries[position - 1]` отменяется следующей. */
+  /** Number of done entries: `entries[position - 1]` is undone next. */
   position: number
   busy: boolean
-  /** Применения с сохранёнными изменениями, от старых к новым (§14). */
+  /** Applies with saved changes, from oldest to newest (§14). */
   applied: readonly EditHistoryApplied[]
 }
 

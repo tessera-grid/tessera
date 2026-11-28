@@ -23,22 +23,22 @@ import { createTesseraSortedRowModel } from './sortedRowModel'
 import { ownStage } from '../../core/rowEngine/engine'
 
 export interface ColumnSortingModelOptions {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
   /**
-   * Мультисортировка: `true`/`undefined` — без предела; `false` — один столбец;
-   * `{ max }` — не больше `max` столбцов в срезе.
+   * Multi-sort: `true`/`undefined` — no limit; `false` — one column; `{ max }` — no more than
+   * `max` columns in the slice.
    */
   multiSort?: boolean | { max?: number }
-  /** Порядок сортировки: задаёт приложение; без него срез хранит грид. */
+  /** Sort order set by the application; without it the grid keeps the slice. */
   sorting?: SortingState
-  /** Новое значение среза после каждого изменения изнутри грида. */
+  /** New slice value after each change from inside the grid. */
   onSortingChange?: (next: SortingState) => void
-  /** Начальное значение среза, которым владеет грид. */
+  /** Initial value of the slice the grid owns. */
   initialSorting?: SortingState
 }
 
-/** Стандартный набор функций сортировки. */
+/** The standard set of sort functions. */
 const sortFns = {
   alphanumeric: sortFn_alphanumeric,
   alphanumericCaseSensitive: sortFn_alphanumericCaseSensitive,

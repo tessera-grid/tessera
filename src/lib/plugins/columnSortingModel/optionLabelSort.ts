@@ -158,7 +158,7 @@ export const optionLabelSortFn = (column: SortColumn) => {
   } as never)
 }
 
-/** Колонке с вариантами без своей функции сортировки ставит сортировку по подписи. */
+/** Gives a column with options and no sort function of its own sorting by label. */
 export const optionLabelSortFeature = {
   initColumnInstanceData: (column: SortColumn) => {
     const { columnDef } = column

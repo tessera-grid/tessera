@@ -23,27 +23,27 @@ import { dataExportModelLabels } from './labels'
 const DEFAULT_FORMATS = [csvFormat()]
 
 export interface DataExportModelOptions {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
-  /** Форматы выгрузки; по умолчанию один CSV. */
+  /** Export formats; one CSV by default. */
   formats?: ExportFormat[]
-  /** Что разрешено по осям (строки, колонки, форматы); остальное недоступно. */
+  /** What is allowed per axis (rows, columns, formats); the rest is unavailable. */
   allow?: ExportAllow
-  /** Быстрые наборы настроек: `table.exportData(id)` и кнопки панели. */
+  /** Quick setting presets: `table.exportData(id)` and the panel buttons. */
   presets?: ExportPreset[]
-  /** Имя файла без расширения (по умолчанию `export`). */
+  /** File name without extension (`export` by default). */
   filename?:
     string | ((settings: ExportSettings, format: ExportFormat) => string)
-  /** Переопределяет значение ячейки в выгрузке. */
+  /** Overrides a cell's value in the export. */
   formatValue?: (context: ExportValueContext) => unknown
   /**
-   * Серверная выгрузка (`dataMode.export`, ADR 0169): её делает потребитель; промис держит
-   * выгрузку в ожидании.
+   * Server export (`dataMode.export`, ADR 0169): the consumer performs it; a promise keeps the
+   * export pending.
    */
   onExport?: ExportHooks['onExport']
-  /** Файл скачан клиентом. */
+  /** The file was downloaded by the client. */
   onExported?: ExportHooks['onExported']
-  /** Предел строк, которые выгрузка загружает из серверной модели (по умолчанию 10 000). */
+  /** Limit of rows the export loads from the server row model (10,000 by default). */
   maxLoadedRows?: number
 }
 

@@ -6,7 +6,7 @@
  */
 import { logError, logWarn } from '../util/logger'
 
-/** Почему подключённый плагин сейчас ничего не делает. */
+/** Why an attached plugin currently does nothing. */
 export type PluginInertReason =
   | 'disabled'
   | 'multiLevelHeader'
@@ -30,7 +30,7 @@ export type PluginDiagnostic =
   | { id: string; status: 'inert'; reason: PluginInertReason }
   | { id: string; status: 'error'; error: string }
 
-/** Проверка плагина: причина инертности или `undefined`, если плагин работает. */
+/** Plugin check: the inert reason, or `undefined` when the plugin works. */
 export type PluginDiagnose = (table: unknown) => PluginInertReason | undefined
 
 /**

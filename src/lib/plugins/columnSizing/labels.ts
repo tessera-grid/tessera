@@ -2,17 +2,17 @@
 import { defineLabels } from '../../core/localization'
 
 export interface ColumnSizingLabels {
-  /** Доступное имя ручки изменения ширины колонки (`role="separator"`) */
+  /** Accessible name of the column resize handle (`role="separator"`) */
   resizeColumn: string
-  /** Меню грипа ширины: имя меню и пункты */
+  /** Width grip menu: menu name and items */
   columnWidth: string
   widenColumn: string
   narrowColumn: string
   resetColumnWidth: string
-  /** Автоподбор ширины по содержимому (ADR 0217): пункты меню ручки и кебаба */
+  /** Autofit width to content (ADR 0217): handle menu and kebab items */
   autosizeColumn: string
   autosizeAllColumns: string
-  /** Действие: отмена протяжки */
+  /** Action: cancel a resize drag */
   actionResizeCancel: string
 }
 

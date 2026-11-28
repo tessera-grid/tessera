@@ -7,9 +7,9 @@ import { noSlotActionsReason } from '../../core/pluginDiagnostics'
 
 export interface RowActionMenuOptions {
   enabled?: boolean
-  /** `auto` — по порогу; `always` — всегда. По умолчанию `auto`. */
+  /** `auto` — by threshold; `always` — always. `auto` by default. */
   mode?: 'auto' | 'always'
-  /** Порог схлопывания для `auto` (по умолчанию 2 — агрессивнее заголовков). */
+  /** Collapse threshold for `auto` (2 by default — more aggressive than headers). */
   threshold?: number
 }
 

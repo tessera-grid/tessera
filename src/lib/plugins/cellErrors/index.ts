@@ -9,9 +9,9 @@ import { CellErrorMark } from './CellErrorMark'
 import type { CellErrorsHooks } from './types'
 
 export interface CellErrorsOptions {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
-  /** Текст ошибки ячейки по её контексту или `undefined`; читается живо. */
+  /** Error text of a cell by its context, or `undefined`; read live. */
   getCellError?: CellErrorsHooks['getCellError']
 }
 

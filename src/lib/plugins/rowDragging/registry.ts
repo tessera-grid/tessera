@@ -25,30 +25,30 @@ import { rowDraggingLabels } from './labels'
 import { DEFAULT_ROW_DRAG_EXPAND_DELAY } from './getRowDraggingEvents'
 
 export interface RowDraggingOptions {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
-  /** Можно ли тащить строку; по умолчанию — любую. Выключить плагин — `enabled`. */
+  /** Whether a row can be dragged; any row by default. To disable the plugin — `enabled`. */
   canDragRow?: (row: Row<any, any>) => boolean
   /**
-   * Пауза над свёрнутой группой, после которой она раскрывается, мс; по умолчанию 500,
-   * `0` — не раскрывать (ADR 0109).
+   * Pause over a collapsed group after which it expands, ms; 500 by default, `0` — never expand
+   * (ADR 0109).
    */
   expandDelay?: number
   /**
-   * Строка перенесена: место после переноса; промис — ожидание на ручке. В ленивом
-   * дереве без него перенос недопустим (ADR 0112).
+   * A row was moved: its place after the move; a promise shows pending on the handle. In a lazy
+   * tree a move isn't allowed without it (ADR 0112).
    */
   onRowDragEnd?: RowDraggingHooks['onRowDragEnd']
   /**
-   * Откатывать перенос при отказе промиса `onRowDragEnd`; по умолчанию `true`. `false` —
-   * клиент остаётся с новым порядком, расхождение с сервером допускается (ADR 0114).
+   * Revert the move when the `onRowDragEnd` promise rejects; `true` by default. `false` — the
+   * client keeps the new order, a mismatch with the server is allowed (ADR 0114).
    */
   revertOnReject?: boolean
-  /** Перетаскивание отменено: Escape, бросок мимо, запрет на лету, строка ушла (ADR 0040). */
+  /** The drag was cancelled: Escape, a drop outside, disallowed on the fly, the row went away (ADR 0040). */
   onRowDragCancel?: RowDraggingHooks['onRowDragCancel']
   /**
-   * Новый порядок данных после переноса — функцией от прежних (ADR 0120, §4): приложение
-   * применяет её к своим `data`.
+   * The new data order after the move — as a function of the previous one (ADR 0120, §4): the
+   * application applies it to its `data`.
    */
   onRowOrderChange?: (updater: Updater<any[]>) => void
 }

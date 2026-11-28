@@ -2,40 +2,40 @@
 import { defineLabels } from '../../core/localization'
 
 export interface RowDraggingLabels {
-  /** Текст отказа переноса строки, если сервер не прислал свой (ADR 0112) */
+  /** Refusal text of a row move when the server sent none (ADR 0112) */
   moveRowFailed: string
-  /** Объявление отказа переноса строки */
+  /** Announcement that a row move was refused */
   announceMoveFailed: (error: string) => string
-  /** Скрытые подписи заголовков служебных колонок (`label` записи `ServiceColumn`) */
+  /** Hidden header labels of service columns (`label` of a `ServiceColumn` entry) */
   reorderColumn: string
-  /** Доступные имена ручек перетаскивания — кнопок меню перестановки */
+  /** Accessible names of drag handles — the reorder menu buttons */
   moveRow: string
-  /** Пункты меню ручки строки; `indentRow` / `outdentRow` — вложить в группу выше / вынести из группы */
+  /** Row handle menu items; `indentRow` / `outdentRow` — nest into the group above / move out of the group */
   moveUp: string
   moveDown: string
-  /** Меню ручки строки в серверной модели: к краям списка (ADR 0159, §6) */
+  /** Row handle menu in the server row model: to the ends of the list (ADR 0159, §6) */
   moveToStart: string
   moveToEnd: string
-  /** Раздел меню ручки при группировке (ADR 0186, §5). */
+  /** Handle menu section with grouping (ADR 0186, §5). */
   moveToGroup: string
   indentRow: string
   outdentRow: string
-  /** Меню ручки при серверной группировке: соседняя группа (ADR 0189, §5). */
+  /** Handle menu with server grouping: an adjacent group (ADR 0189, §5). */
   moveToPreviousGroup: string
   moveToNextGroup: string
-  /** Действие: отмена переноса строки */
+  /** Action: cancel a row move */
   actionDragCancel: string
-  /** Действие: смена места броска */
+  /** Action: the drop position changed */
   actionDragOver: string
-  /** Действие: бросок строки */
+  /** Action: drop a row */
   actionDrop: string
-  /** Действие: раскрытие группы паузой над ней */
+  /** Action: expand a group by pausing over it */
   actionExpandOnHover: string
-  /** Действие: ожидание ветки цели перед переносом */
+  /** Action: waiting for the target branch before the move */
   actionAwaitBranch: string
-  /** Действие: вложить строку клавишей */
+  /** Action: nest a row with a key */
   actionNest: string
-  /** Действие: пункт меню ручки строки */
+  /** Action: a row handle menu item */
   actionHandleMenu: string
 }
 

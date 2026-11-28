@@ -15,17 +15,17 @@ import { useSliceProjection } from '../reactivity'
 import { actionLabelOf } from '../actions'
 import { actionOwnerOf } from '../actionOwners'
 
-/** Цель черновика: ячейка, строка или колонка. */
+/** Draft target: a cell, a row or a column. */
 export type DraftTarget =
   | { cell: [rowId: string, columnId: string] }
   | { row: string }
   | { column: string }
 
 export interface Draft {
-  /** Вид черновика — его объявляет плагин-владелец. */
+  /** Draft kind — declared by the owner plugin. */
   kind: string
   target: DraftTarget
-  /** Значение — сериализуемое. */
+  /** The value — serializable. */
   value: unknown
 }
 
@@ -52,47 +52,47 @@ export const draftValueDetails = (
     { label: labels.draftNow, value: now },
   ] as const
 
-/** Поведение вида черновика (ADR 0178, §1, DR3). */
+/** Behavior of a draft kind (ADR 0178, §1, DR3). */
 export interface DraftKind {
   kind: string
   /**
-   * Действие справочника у владельца вида (ADR 0182, §5): им пульт называет запись — что это
-   * за черновик.
+   * Catalog action of the kind's owner (ADR 0182, §5): the unsaved-changes panel names the entry
+   * with it — what kind of draft it is.
    */
   action: string
-  /** Значение черновика одной строкой — для пульта; без поля пульт значение не пишет. */
+  /** The draft value as one line — for the panel; without the field the panel shows no value. */
   describe?: (labels: TableLabels, draft: Draft, table: unknown) => string
   /**
-   * Что действует сейчас, одной строкой: значение в данных, действующее условие. С ним пульт
-   * пишет «Было» и «Стало»; `undefined` — прежнего не знаем, только «Стало».
+   * What applies now, as one line: the value in the data, the active condition. With it the
+   * panel shows "Was" and "Now"; `undefined` means the previous value is unknown, only "Now".
    */
   previous?: (
     labels: TableLabels,
     draft: Draft,
     table: unknown,
   ) => string | undefined
-  /** Применить черновик; промис — ожидание, его отказ — отказ на объекте (ADR 0177). */
+  /** Applies the draft; a promise means pending, its rejection is a failure on the object (ADR 0177). */
   apply: (table: unknown, draft: Draft) => unknown
-  /** Применить черновики вида одним действием (пакет); без поля — по одному. */
+  /** Applies the kind's drafts in one action (a batch); without the field — one by one. */
   applyAll?: (table: unknown, drafts: readonly Draft[]) => unknown
-  /** Заголовок раздела пульта для черновиков вида с целью-колонкой (DR44); без поля — подпись вида. */
+  /** Panel section title for drafts of a kind with a column target (DR44); without it — the kind's label. */
   sectionLabel?: (labels: TableLabels) => string
   /**
-   * Незавершённый ввод вида вне реестра (открытая правка ячейки, ADR 0178, §5): срез и
-   * признак. Пульт считает его, «Применить всё» отдаёт его `applyAll`.
+   * Unfinished input of the kind outside the registry (an open cell edit, ADR 0178, §5): a slice
+   * and a flag. The panel counts it, "Apply all" passes it to `applyAll`.
    */
   openKey?: string
   isOpen?: (slice: unknown) => boolean
-  /** Сбросить черновик; без поля — только снять запись. */
+  /** Discards the draft; without the field — only removes the entry. */
   discard?: (table: unknown, draft: Draft) => void
-  /** Вид работает в этой таблице; `false` — его черновики инертны (DR8). */
+  /** The kind works in this table; `false` makes its drafts inert (DR8). */
   active?: (table: unknown) => boolean
   /**
-   * Что меняет черновик: данные или вид выборки. «Применить всё» применяет сначала данные,
-   * затем вид (ADR 0178, §5); без поля — данные.
+   * What the draft changes: the data or the view of the selection. "Apply all" applies data
+   * first, then the view (ADR 0178, §5); without the field — data.
    */
   stage?: 'data' | 'view'
-  /** Черновик строки меняет её вид в теле: новая или удалённая (ADR 0178, §7). */
+  /** A row draft changes how the row looks in the body: new or removed (ADR 0178, §7). */
   rowMark?: RowDraftMark
 }
 

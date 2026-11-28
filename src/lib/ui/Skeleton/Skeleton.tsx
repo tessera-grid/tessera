@@ -16,7 +16,7 @@ export interface SkeletonProps {
 export const SKELETON_WAVE_ATTRIBUTE = 'data-tsr-skeleton-wave'
 
 /**
- * Плейсхолдер-скелетон для загрузки данных.
+ * A skeleton placeholder for loading data.
  */
 export const Skeleton = memo(
   ({ width, height, animation = 'wave', className, style }: SkeletonProps) => (

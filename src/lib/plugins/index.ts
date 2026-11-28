@@ -192,3 +192,79 @@ export {
   type ViewSettingsPanelProps,
   type ViewSettingsSection,
 } from '../core/viewSettings'
+
+// Types that public signatures reference (ADR 0113, DC7): the API reference links to them.
+export type {
+  CellsWritten,
+  WrittenCell,
+  WrittenMove,
+  WrittenRow,
+} from '../core/cellWrites'
+export type { DataTypeName, DateCellValue } from '../core/dataTypes'
+export type { ServiceColumnMode } from '../core/servicePresence'
+export type { BackToTopLabels } from '../plugins/backToTop/labels'
+export type { CellEditingLabels } from '../plugins/cellEditing/labels'
+export type {
+  ApplyOutcome,
+  CellEditBatch,
+  CellEditBatchResult,
+  EditingCell,
+  PendingPackage,
+} from '../plugins/cellEditing/types'
+export type { CellSelectionLabels } from '../plugins/cellSelection/labels'
+export type { FillValue, ParseClipboard } from '../plugins/cellSelection/types'
+export type { CellSelectionState } from '../plugins/cellSelectionModel/indexSelection'
+export type { CellSelectionPredicateCell } from '../plugins/cellSelectionModel/registry'
+export type { AggregationColumn } from '../plugins/columnAggregation/functions'
+export type { ColumnAggregationLabels } from '../plugins/columnAggregation/labels'
+export type { ColumnDraggingLabels } from '../plugins/columnDragging/labels'
+export type { ColumnFilteringLabels } from '../plugins/columnFiltering/labels'
+export type {
+  DateFilter,
+  EmptinessFilter,
+  NumberBound,
+  OptionFilter,
+} from '../plugins/columnFilteringModel/types'
+export type { ColumnPinningLabels } from '../plugins/columnPinning/labels'
+export type { ColumnSizingLabels } from '../plugins/columnSizing/labels'
+export type { ColumnSortingLabels } from '../plugins/columnSorting/labels'
+export type { ColumnVisibilityLabels } from '../plugins/columnVisibility/labels'
+export type { ContextMenuLabels } from '../plugins/contextMenu/labels'
+export type { DataExportLabels } from '../plugins/dataExport/labels'
+export type { DataExportModelLabels } from '../plugins/dataExportModel/labels'
+export type { BuildXlsxOptions } from '../plugins/dataExportModel/xlsxBuild'
+export type { EditHistoryApplied } from '../plugins/editHistory/history'
+export type { EditHistoryLabels } from '../plugins/editHistory/labels'
+export type { FailureLogLabels } from '../plugins/failureLog/labels'
+export type { InfiniteScrollLabels } from '../plugins/infiniteScroll/labels'
+export type { PaginationLabels } from '../plugins/pagination/labels'
+export type { PageNumbersMode } from '../plugins/pagination/registry'
+export type { QuickSearchLabels } from '../plugins/quickSearch/labels'
+export type { RowActionsLabels } from '../plugins/rowActions/labels'
+export type { RowDraggingLabels } from '../plugins/rowDragging/labels'
+export type { RowExpandingLabels } from '../plugins/rowExpanding/labels'
+export type { RowGroupingLabels } from '../plugins/rowGrouping/labels'
+export type { RowSelectionLabels } from '../plugins/rowSelection/labels'
+export type { RowSelectionModelLabels } from '../plugins/rowSelectionModel/labels'
+export type { ServerRowModelLabels } from '../plugins/serverRowModel/labels'
+export type { UnsavedChangesLabels } from '../plugins/unsavedChanges/labels'
+export type { CalendarLabels } from '../shared/calendar/labels'
+export type { CellErrorHook } from '../shared/cellHooks'
+export type {
+  FilterChangeHook,
+  SearchChangeHook,
+} from '../shared/filtering/filtering'
+export type { FilteringLabels } from '../shared/filtering/labels'
+export type { OptionsLabels } from '../shared/options/labels'
+export type { ToolbarPlacementOption } from '../shared/toolbarPlacement'
+export type { Preloadable } from '../util/preloadable'
+export type { BuiltInDataType } from '../core/dataTypes'
+export type { CellEditBatchItem } from '../plugins/cellEditing/types'
+export type { CellSelectionRange } from '../plugins/cellSelectionModel/indexSelection'
+export type { ColumnFilterEntry } from '../shared/filtering/filtering'
+export type { DateFilterPreset } from '../plugins/columnFilteringModel/types'
+export type { FillContext } from '../plugins/cellSelection/types'
+export type { RowInsertBatchItem } from '../plugins/cellEditing/types'
+export type { RowPlace } from '../core/cellWrites'
+export type { SearchScope } from '../shared/filtering/filtering'
+export type { BUILT_IN_DATA_TYPES } from '../core/dataTypes'

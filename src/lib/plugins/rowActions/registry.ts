@@ -18,15 +18,15 @@ import {
 } from './rowActionsColumn'
 
 export interface RowActionsPluginOptions {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
-  /** Ширина колонки действий, px (по умолчанию 120). */
+  /** Width of the actions column, px (120 by default). */
   width?: number
-  /** Ширина при схлопнутых действиях (кебаб rowActionMenu, по умолчанию 56). */
+  /** Width with collapsed actions (the rowActionMenu kebab, 56 by default). */
   collapsedWidth?: number
   /**
-   * `'auto'` (по умолчанию) — колонка видна, только если плагины добавили действия
-   * строки; `'always'` — всегда (ADR 0050).
+   * `'auto'` (default) — the column is shown only when plugins added row actions; `'always'` —
+   * always (ADR 0050).
    */
   column?: ServiceColumnMode
 }

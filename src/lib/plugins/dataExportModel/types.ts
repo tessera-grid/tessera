@@ -1,77 +1,77 @@
 import type { BuiltInDataType, DateCellValue } from '../../core/dataTypes'
 import type { RowSelectionValue } from '../../core/rowSelectionAll'
 
-/** Значения оси «Строки» (ADR 0044, §2). */
+/** Values of the "Rows" axis (ADR 0044, §2). */
 export type ExportRows = 'all' | 'view' | 'page' | 'selected'
 
-/** Значения оси «Колонки». */
+/** Values of the "Columns" axis. */
 export type ExportColumns = 'visible' | 'all'
 
-/** Тип данных колонки, как его читает лист (ADR 0172, DT17). */
+/** A column's data type as the sheet reads it (ADR 0172, DT17). */
 export interface ExportColumnDataType {
   name: string
   base: BuiltInDataType
-  /** Значение ячейки своего формата → дата. */
+  /** Custom-format cell value → date. */
   parseDate?: (value: unknown) => DateCellValue
 }
 
 export interface ExportColumn {
   id: string
   header: string
-  /** Ширина колонки в гриде, px. */
+  /** Column width in the grid, px. */
   size?: number
-  /** Сторона закрепления в гриде. */
+  /** Pinning side in the grid. */
   pinned?: 'start' | 'end' | false
-  /** Тип данных колонки: колонки типов дат лист пишет датами. */
+  /** Column data type: the sheet writes date-type columns as dates. */
   dataType?: ExportColumnDataType
 }
 
-/** Данные выгрузки: колонки и строки значений в порядке колонок. */
+/** Export data: columns and rows of values in column order. */
 export interface ExportData {
   columns: ExportColumn[]
   rows: unknown[][]
-  /** Пояс дат таблицы (`useCreateTable({ timeZone })`, ADR 0169); без него — браузера. */
+  /** The table's time zone (`useCreateTable({ timeZone })`, ADR 0169); without it — the browser's. */
   timeZone?: string
 }
 
 export type ExportContent = string | Uint8Array | Blob
 
-/** Контекст асинхронной выгрузки: `signal` прерывает отмена (ADR 0153, §1). */
+/** Context of an async export: `signal` is aborted on cancel (ADR 0153, §1). */
 export interface ExportContext {
   signal: AbortSignal
 }
 
 export interface ExportFormat {
   id: string
-  /** Подпись формата. */
+  /** Format label. */
   label: string
-  /** Расширение файла без точки. */
+  /** File extension without the dot. */
   extension: string
   mimeType: string
-  /** Промис — выгрузка ждёт его, кнопка показывает ожидание (ADR 0073, §2). */
+  /** A promise — the export waits for it, the button shows pending (ADR 0073, §2). */
   serialize: (
     data: ExportData,
     context?: ExportContext,
   ) => ExportContent | Promise<ExportContent>
 }
 
-/** Настройки выгрузки: по одному значению в каждой оси. */
+/** Export settings: one value on each axis. */
 export interface ExportSettings {
   rows: ExportRows
   columns: ExportColumns
-  /** Id формата из `formats`. */
+  /** Format id from `formats`. */
   format: string
 }
 
-/** Что разрешено разработчиком по осям; значение вне списка недоступно. */
+/** What the developer allows per axis; a value outside the list is unavailable. */
 export interface ExportAllow {
   rows?: ExportRows[]
   columns?: ExportColumns[]
-  /** Id форматов. */
+  /** Format ids. */
   formats?: string[]
 }
 
-/** Быстрый набор: выставляет только перечисленные оси и ничего не выгружает. */
+/** A quick preset: sets only the listed axes and doesn't export anything. */
 export interface ExportPreset extends Partial<ExportSettings> {
   id: string
   label: string
@@ -83,42 +83,42 @@ export interface ExportValueContext {
   column: { id: string }
 }
 
-/** Запрос выгрузки: в `onExport` — на сервер, в `onExported` — итог скачивания. */
+/** Export request: in `onExport` — to the server, in `onExported` — the download result. */
 export interface ExportRequest {
   settings: ExportSettings
   format: ExportFormat
   columns: ExportColumn[]
-  /** Только `rows: 'selected'` в серверном `onExport`: id всех выбранных строк. */
+  /** Only for `rows: 'selected'` in server `onExport`: ids of all selected rows. */
   rowIds?: string[]
   /**
-   * Только серверная модель строк, в серверном `onExport` (ADR 0138, §10): выборка, под
-   * которую выгружать, и срез выбора — выбранные `id` или «всё, кроме». Срез «всё, кроме»
-   * приходит и без серверной модели — со страницей с сервера и лентой (ADR 0179, §3).
+   * Server row model only, in server `onExport` (ADR 0138, §10): the result set to export and the
+   * selection slice — selected `id`s or "all except". The "all except" slice also arrives without
+   * the server row model — with server pagination and infinite scroll (ADR 0179, §3).
    */
   query?: {
     sorting: unknown[]
     columnFilters: unknown[]
     globalFilter: string
-    /** Колонки группировки по уровням (ADR 0144); без группировки — пусто. */
+    /** Grouping columns by level (ADR 0144); empty without grouping. */
     grouping: string[]
-    /** Колонка → имя её `aggregationFn`; только явные строковые. */
+    /** Column → the name of its `aggregationFn`; explicit string names only. */
     aggregations: Record<string, string>
-    /** Колонки с `aggregationScope: 'all'` (ADR 0229). */
+    /** Columns with `aggregationScope: 'all'` (ADR 0229). */
     aggregationScopes: Record<string, 'all'>
   }
   selection?: RowSelectionValue
-  /** Только в `onExported`. */
+  /** Only in `onExported`. */
   rowCount?: number
-  /** Только в `onExported`: имя файла без расширения. */
+  /** Only in `onExported`: file name without extension. */
   filename?: string
 }
 
 export interface ExportHooks {
-  /** Серверная выгрузка: её делает потребитель; промис держит кнопку занятой. */
+  /** Server export: the consumer performs it; a promise keeps the button busy. */
   onExport: (
     request: ExportRequest,
     context?: ExportContext,
   ) => void | Promise<void>
-  /** Файл скачан клиентом. */
+  /** The file was downloaded by the client. */
   onExported: (request: ExportRequest) => void
 }

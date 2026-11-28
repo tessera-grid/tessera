@@ -18,13 +18,13 @@ import { transformSection } from '../../shared/transformSection'
 import type { ColumnSortingHooks } from './types'
 import { columnSortingLabels } from './labels'
 
-/** Тонкая настройка мультисортировки. */
+/** Multi-sort fine-tuning. */
 export interface ColumnMultiSortOptions {
-  /** Максимум одновременно сортируемых столбцов (по умолчанию без лимита). */
+  /** Maximum number of columns sorted at once (no limit by default). */
   max?: number
   /**
-   * Жест добавления столбца к сортировке. `'shift'` (по умолчанию) — штатный
-   * Shift+клик; своя функция — произвольный предикат (напр. тач `() => true`).
+   * Gesture that adds a column to the sort. `'shift'` (default) is the standard Shift+click; a
+   * custom function is any predicate (for example, touch `() => true`).
    */
   event?: 'shift' | ((event: unknown) => boolean)
 }
@@ -33,18 +33,18 @@ export interface ColumnSortingOptions extends Omit<
   ColumnSortingModelOptions,
   'enabled' | 'multiSort'
 > {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
-  /** Разрешить снятие сортировки третьим кликом (по умолчанию true). */
+  /** Allow removing the sort with a third click (true by default). */
   removal?: boolean
   /**
-   * Отказ промиса `onToggleColumnSort` в серверном режиме откатывает сортировку (по
-   * умолчанию true); `false` — сортировка остаётся новой (ADR 0116).
+   * In server mode, a rejection of the `onToggleColumnSort` promise reverts the sort (true by
+   * default); `false` — the new sort stays (ADR 0116).
    */
   revertOnReject?: boolean
-  /** Мультисортировка: `true`/`undefined` — Shift+клик; `false` — выкл; объект — тонко. */
+  /** Multi-sort: `true`/`undefined` — Shift+click; `false` — off; an object — fine-tuned. */
   multiSort?: boolean | ColumnMultiSortOptions
-  /** Бизнес-колбэк сортировки (аргумент фабрики); читается живо. */
+  /** Sorting business callback (a factory argument); read live. */
   onToggleColumnSort?: ColumnSortingHooks['onToggleColumnSort']
 }
 

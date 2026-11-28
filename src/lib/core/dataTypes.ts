@@ -22,43 +22,43 @@ export const BUILT_IN_DATA_TYPES = [
 
 export type BuiltInDataType = (typeof BUILT_IN_DATA_TYPES)[number]
 
-/** Имя типа колонки: встроенное или из реестра `dataTypes`. */
+/** Column type name: built-in or from the `dataTypes` registry. */
 export type DataTypeName = BuiltInDataType | (string & {})
 
 export type DataTypeAlign = 'start' | 'center' | 'end'
 
-/** Опции `Intl.NumberFormat` или `Intl.DateTimeFormat` — по базовому типу. */
+/** `Intl.NumberFormat` or `Intl.DateTimeFormat` options, depending on the base type. */
 export type DataTypeFormat = Intl.NumberFormatOptions &
   Intl.DateTimeFormatOptions
 
-/** Значение ячейки даты своего формата, разобранное в дату: `Date`, миллисекунды или ISO. */
+/** A custom-format date cell value parsed into a date: `Date`, milliseconds or ISO string. */
 export type DateCellValue = Date | string | number | null | undefined
 
 /** Поля, которые задаются у типа и у колонки; поле колонки главнее (DT2). */
 export interface DataTypeFields<TData = any> {
-  /** Опции `Intl` на языке таблицы (DT7). */
+  /** `Intl` options in the table's language (DT7). */
   format?: DataTypeFormat
-  /** Текст значения; главнее `format` (DT7). */
+  /** Value text; takes precedence over `format` (DT7). */
   formatValue?: (value: unknown, row: TData) => string
-  /** Выравнивание в ячейке и заголовке; по умолчанию — к началу (DT9). */
+  /** Alignment in the cell and header; start by default (DT9). */
   align?: DataTypeAlign
-  /** Свой разбор текста редактора (ADR 0139). */
+  /** Custom parsing of editor text (ADR 0139). */
   parseValue?: (text: string, row: TData) => unknown
-  /** Значение ячейки своего формата → дата: вид, сортировка, фильтр и выгрузка (DT10, DT13). */
+  /** Custom-format cell value → date: display, sorting, filter and export (DT10, DT13). */
   parseDate?: (value: unknown) => DateCellValue
-  /** Дата → значение ячейки своего формата: так пишет редактор даты (ADR 0175, ED15). */
+  /** Date → custom-format cell value: how the date editor writes it (ADR 0175, ED15). */
   formatDate?: (date: Date) => unknown
-  /** Справочник: варианты фильтра по строке поиска (DT13). */
+  /** Lookup: filter options for a search string (DT13). */
   loadOptions?: LoadOptions
-  /** Ключ записи `object`: равенство, фильтр и группировка; по умолчанию — поле `id` (TY1). */
+  /** Key of an `object` record: equality, filter and grouping; the `id` field by default (TY1). */
   getKey?: (value: any) => unknown
-  /** Подпись записи `object`; по умолчанию — `label`, иначе `name`, иначе ключ (TY1). */
+  /** Label of an `object` record; `label` by default, then `name`, then the key (TY1). */
   getLabel?: (value: any) => string
 }
 
-/** Запись реестра `dataTypes`: свой тип или замена полей встроенного. */
+/** An entry of the `dataTypes` registry: a custom type or an override of built-in fields. */
 export interface DataTypeDefinition<TData = any> extends DataTypeFields<TData> {
-  /** Тип, чьи непереопределённые поля наследуются; без него свой тип — текст. */
+  /** Type whose fields are inherited unless overridden; without it a custom type is text. */
   extends?: DataTypeName
 }
 

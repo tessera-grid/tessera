@@ -44,3 +44,6 @@ export {
   GroupButton,
   type GroupButtonProps,
 } from './lib/plugins/rowGrouping/GroupButton'
+
+// Types that public signatures reference (ADR 0113, DC7): the API reference links to them.
+export type { TooltipSide } from './lib/ui/Tooltip/Tooltip'

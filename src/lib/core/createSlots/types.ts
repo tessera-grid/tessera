@@ -15,74 +15,74 @@ import type {
   Table,
 } from '../../types'
 
-/** Пропсы компонента слота заголовка — v9-контекст заголовка. */
+/** Props of a header slot component — the v9 header context. */
 export type HeaderComponentProps = HeaderContext<any, any, any>
-/** Пропсы компонента слота ячейки/строки — v9-контекст ячейки. */
+/** Props of a cell or row slot component — the v9 cell context. */
 export type CellComponentProps = CellContext<any, any, any>
-/** Пропсы компонента кнопки тулбара — таблица целиком (контекста колонки нет). */
+/** Props of a toolbar button component — the whole table (no column context). */
 export interface ToolbarComponentProps {
   table: Table<any, any>
 }
-/** Пропсы компонента нижней панели — как у тулбара, таблица целиком. */
+/** Props of a status bar component — like the toolbar, the whole table. */
 export type StatusBarComponentProps = ToolbarComponentProps
 /**
- * Пропсы компонента в конце тела (ADR 0081): строки вне модели повторяют ширины,
- * закрепление и окно виртуализации колонок тела.
+ * Props of a component at the end of the body (ADR 0081): rows outside the model repeat the
+ * widths, pinning and column virtualization window of the body.
  */
 export interface BodyEndComponentProps {
   table: Table<any, any>
   leafColumns: Column<any, any, unknown>[]
   virtualColumns: VirtualItem[]
-  /** `aria-rowindex` строки сразу за последней строкой тела. */
+  /** `aria-rowindex` of the row right after the last body row. */
   nextAriaRowIndex: number
-  /** Строки скелета после тела — тем же видом, что строки тела (ADR 0170, §2). */
+  /** Skeleton rows after the body — rendered like body rows (ADR 0170, §2). */
   renderSkeletonRows: (request: SkeletonRowsRequest) => ReactNode
 }
 
 export interface SkeletonRowsRequest {
   rowCount: number
-  /** Номер первой строки в теле: чётность полос продолжает тело. */
+  /** Number of the first row in the body: stripe parity continues the body. */
   firstRowIndex: number
   className?: string
-  /** `false` — строки вне области прокрутки: только их высота, без ячеек. */
+  /** `false` — rows outside the scroll area: only their height, no cells. */
   cells?: boolean
 }
 
 export interface RegisterSlotParams<TContext extends object> {
-  /** Уникальный идентификатор плагина (ключ не должен быть динамическим). */
+  /** Unique plugin id (the key must not be dynamic). */
   id: string
-  /** Порядок относительно соседних плагинов в слоте. */
+  /** Order relative to neighboring plugins in the slot. */
   order?: number | 'last'
   /**
-   * Внешний признак видимости.
-   * @deprecated Используйте условный рендеринг внутри `component`.
+   * External visibility flag.
+   * @deprecated Use conditional rendering inside `component`.
    */
   visible?: boolean
   /**
-   * Функция отрисовки JSX.
-   * @deprecated В v9 рендер идёт через `FlexRender`; используйте `component`.
+   * JSX render function.
+   * @deprecated In v9 rendering goes through `FlexRender`; use `component`.
    */
   render?: ColumnDefTemplate<TContext>
-  /** Компонент плагина. */
+  /** The plugin's component. */
   component?: (props: TContext) => any
   /**
-   * Учитывать ли слот в пороге схлопывания кебаб-меню. `false` — слот-аффорданс
-   * (напр. resize-грип), не занимающий место в счётчике. По умолчанию учитывается.
+   * Whether the slot counts toward the kebab-menu collapse threshold. `false` is an affordance
+   * slot (for example, a resize grip) that doesn't take a place in the count. Counted by default.
    */
   countsAsHeaderAction?: boolean
-  /** Подгруппа кнопок тулбара (только `toolbarSlot`); по умолчанию `'default'`. */
+  /** Toolbar button subgroup (`toolbarSlot` only); `'default'` by default. */
   group?: string
   /**
-   * Сторона нижней панели или тулбара (`statusBarSlot`, `toolbarSlot`). По умолчанию
-   * у панели — `'start'`, у тулбара — `'end'` (кнопки прижаты вправо).
+   * Side of the status bar or toolbar (`statusBarSlot`, `toolbarSlot`). Defaults to `'start'`
+   * for the status bar and `'end'` for the toolbar (buttons aligned right).
    */
   align?: 'start' | 'end'
   /**
-   * Вызывает ли запись нижнюю панель (`statusBarSlot`, ADR 0082). `false` — запись
-   * рисуется в панели, которую показали другие записи или флаг, но сама её не держит.
+   * Whether the entry makes the status bar appear (`statusBarSlot`, ADR 0082). `false` — the
+   * entry renders in a status bar shown by other entries or the flag, but doesn't keep it shown.
    */
   showsPanel?: boolean
-  /** `id` плагина-владельца; проставляет ядро при свёртке (граница ошибок, ADR 0037). */
+  /** `id` of the owner plugin; the core sets it when folding plugins (error boundary, ADR 0037). */
   pluginId?: string
 }
 
@@ -97,9 +97,8 @@ export type StatusBarSlot = RegisterSlotParams<StatusBarComponentProps>[]
 export type BodyEndSlot = RegisterSlotParams<BodyEndComponentProps>[]
 
 /**
- * Декларативное объявление слота плагином. Ядро собирает слоты
- * реактивно из активных плагинов — появление/исчезновение кнопки следует за
- * наличием плагина.
+ * A plugin's declarative slot. The core collects slots reactively from active plugins, so a
+ * button appears and disappears with its plugin.
  */
 export type PluginSlot =
   | (RegisterSlotParams<HeaderComponentProps> & {

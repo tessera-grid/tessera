@@ -7,7 +7,7 @@ import type { ReactNode } from 'react'
 
 import type { TableLabels } from './localization'
 
-/** Отказ загрузки, как его видит грид (ADR 0096). */
+/** A load failure as the grid sees it (ADR 0096). */
 export interface StubLoadError {
   shown: boolean
   error: unknown
@@ -16,7 +16,7 @@ export interface StubLoadError {
   pending: boolean
 }
 
-/** Что знает условие и тексты записи. */
+/** What the condition and the entry's texts know. */
 export interface StubContext {
   table: unknown
   rowCount: number
@@ -27,34 +27,34 @@ export interface StubAction {
   label: string
   run: () => void
   pending?: boolean
-  /** Ключ словаря `icons` (`retry`…): иконку по нему находит грид (ADR 0166). */
+  /** `icons` dictionary key (`retry`…): the grid finds the icon by it (ADR 0166). */
   icon?: string
   testId?: string
-  /** Кнопка берёт фокус при появлении заглушки, если вернёт `true` (зовётся в эффекте). */
+  /** The button takes focus when the stub appears if this returns `true` (called in an effect). */
   focusOnMount?: () => boolean
 }
 
 export interface StubEntry {
-  /** Имя причины: ключ в пропе `stubs` грида. */
+  /** Reason name: the key in the grid's `stubs` prop. */
   id: string
-  /** Меньше — главнее. */
+  /** Lower takes precedence. */
   priority: number
-  /** Вместо таблицы (`grid`) или под шапкой (`body`). */
+  /** Instead of the table (`grid`) or under the header (`body`). */
   placement: 'grid' | 'body'
   when: (context: StubContext) => boolean
   title: (labels: TableLabels) => string
   description?: (context: StubContext) => string | undefined
-  /** Ключ иконки или иллюстрации словаря `icons`, её сторона в px и цвет (CSS-значение). */
+  /** Key of an icon or illustration in the `icons` dictionary, its size in px and its color (a CSS value). */
   media?: string
   mediaSize?: number
   mediaColor?: string
   action?: (context: StubContext, labels: TableLabels) => StubAction | undefined
-  /** `false` — появление объявляет свой механизм, а не реестр. */
+  /** `false` — the appearance is announced by its own mechanism, not by the registry. */
   announce?: boolean
   testId?: string
 }
 
-/** Что получает своя заглушка приложения из пропа `stubs`. */
+/** What the application's own stub from the `stubs` prop receives. */
 export interface StubRenderProps {
   action?: () => void
   error?: unknown
@@ -62,7 +62,7 @@ export interface StubRenderProps {
 
 export type StubRender = ReactNode | ((props: StubRenderProps) => ReactNode)
 
-/** Id встроенных причин; плагины добавляют свои. */
+/** Ids of built-in reasons; plugins add their own. */
 export type StubId =
   'loadError' | 'columnsHidden' | 'noColumns' | 'filtered' | 'noData'
 

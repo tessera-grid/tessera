@@ -19,14 +19,14 @@ export interface RowGroupingOptions extends Omit<
   RowGroupingModelOptions,
   'enabled'
 > {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
   /**
-   * Строка группы держится под шапкой, пока видны её строки; вложенные — стопкой
-   * (ADR 0160, §3). По умолчанию выключено.
+   * A group row stays under the header while its rows are visible; nested ones stack
+   * (ADR 0160, §3). Off by default.
    */
   stickyRows?: boolean
-  /** `false` — без числа строк данных в строке группы (ADR 0184, §8). */
+  /** `false` — no data row count in the group row (ADR 0184, §8). */
   groupRowCount?: boolean
 }
 

@@ -3,36 +3,36 @@ import { defineLabels } from '../../core/localization'
 
 export interface CellSelectionLabels {
   selectAllCells: string
-  /** Пункт «Копировать» (контекстное меню / действия выделения) */
+  /** The "Copy" item (context menu / selection actions) */
   copy: string
-  /** Объявление копирования выделения (`cells` — число ячеек) */
+  /** Announcement of copying the selection (`cells` is the cell count) */
   announceCopy: (cells: number) => string
-  /** Объявление ожидания копирования: догружаются строки выделения (ADR 0146) */
+  /** Announcement of a pending copy: selection rows are loading (ADR 0146) */
   announceCopyLoading: (rows: number) => string
-  /** Отказ копирования: строк выделения больше предела `maxCopyRows` (ADR 0146) */
+  /** Copy refused: more selection rows than the `maxCopyRows` limit (ADR 0146) */
   copyTooManyRows: (rows: number, max: number) => string
-  /** Отказ копирования: браузер не дал записать в буфер обмена (ADR 0146) */
+  /** Copy refused: the browser didn't allow writing to the clipboard (ADR 0146) */
   copyClipboardDenied: string
-  /** Действие: выделить ячейки */
+  /** Action: select cells */
   actionSelect: string
-  /** Действие: расширить выделение */
+  /** Action: extend the selection */
   actionExtendSelection: string
-  /** Действие: изменить диапазон маркером угла (ADR 0198) */
+  /** Action: change the range with the corner handle (ADR 0198) */
   actionResizeRange: string
-  /** Пункты «Вставить», «Вырезать», «Очистить» (ADR 0219, WR17) */
+  /** The "Paste", "Cut", "Clear" items (ADR 0219, WR17) */
   paste: string
   cut: string
   clear: string
-  /** Объявление: вставлена часть строк буфера — таблица кончилась (WR8) */
+  /** Announcement: only part of the clipboard rows was pasted — the table ended (WR8) */
   announcePasteCut: (count: number, total: number) => string
-  /** Отказ «Вставить» из меню: браузер не дал прочесть буфер */
+  /** "Paste" from the menu refused: the browser didn't allow reading the clipboard */
   pasteDenied: string
-  /** Пункты «Заполнить вниз» и «Заполнить вправо» (WR19) */
+  /** The "Fill down" and "Fill right" items (WR19) */
   fillDown: string
   fillRight: string
-  /** Действие: протяжка значения маркером (WR16) */
+  /** Action: drag a value with the handle (WR16) */
   actionFill: string
-  /** Отказ записи в SSRM: строк цели больше предела `maxCopyRows` (ADR 0219, WR28) */
+  /** Write refused in the server row model: more target rows than the `maxCopyRows` limit (ADR 0219, WR28) */
   writeTooManyRows: (rows: number, max: number) => string
 }
 

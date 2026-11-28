@@ -39,34 +39,34 @@ import { calendarLabels } from '../../shared/calendar/labels'
 import { optionsLabels } from '../../shared/options/labels'
 
 export interface CellEditingOptions {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
-  /** Условие показа кнопки редактирования по контексту ячейки (по умолчанию — всегда). */
+  /** Whether to show the edit button for a cell context (always by default). */
   canEditCell?: (ctx: CellComponentProps) => boolean
-  /** Коммит нового значения ячейки (аргумент фабрики); читается живо. */
+  /** Commits a new cell value (a factory argument); read live. */
   onCellEdit?: CellEditingHooks['onCellEdit']
-  /** Правка завершилась без сохранения; приходят причина и черновик (ADR 0040). */
+  /** The edit ended without saving; receives the reason and the draft (ADR 0040). */
   onEditCancel?: CellEditingHooks['onEditCancel']
-  /** `'manual'` — законченная правка становится черновиком, сохраняет пакет (ADR 0178, §5). */
+  /** `'manual'` — a finished edit becomes a draft, saved by a batch (ADR 0178, §5). */
   saveMode?: CellEditingHooks['saveMode']
-  /** Сохранить пакет черновиков ячеек одним вызовом (ADR 0178, §5). */
+  /** Saves a batch of cell drafts in one call (ADR 0178, §5). */
   onCommitEdits?: CellEditingHooks['onCommitEdits']
-  /** Значение изменилось извне во время правки: сохранить (по умолчанию) или нет. */
+  /** The value changed from outside during the edit: save it (default) or not. */
   onConflict?: CellEditingHooks['onConflict']
-  /** Свой редактор ячеек; главнее — `editor` колонки и её типа, иначе встроенный по типу. */
+  /** Custom cell editor; the column's and its type's `editor` take precedence, otherwise the built-in one for the type. */
   editor?: CellEditingHooks['editor']
-  /** Пауза ввода перед запросом справочника `loadOptions` в редакторе, мс; без неё — на каждый ввод. */
+  /** Typing pause before the `loadOptions` lookup request in the editor, ms; without it — on every keystroke. */
   searchDebounceMs?: number
-  /** Проверка значения в типе колонки перед коммитом: текст ошибки блокирует коммит. */
+  /** Validates the value in the column type before committing: an error text blocks the commit. */
   validate?: CellEditingHooks['validate']
   /**
-   * Состояние правки у приложения: открытая правка (`active`) и ячейки, ждущие сервера
-   * (ADR 0028, CE6; ADR 0171, §4).
+   * Edit state controlled by the application: the open edit (`active`) and cells waiting for
+   * the server (ADR 0028, CE6; ADR 0171, §4).
    */
   editing?: CellEditingState
-  /** Состояние правки сменилось — открытие, ввод черновика, закрытие, ответ сервера. */
+  /** The edit state changed — open, draft input, close, server answer. */
   onEditingChange?: (next: CellEditingState) => void
-  /** Состояние правки при монтировании, если его не ведёт приложение (EF10). */
+  /** Edit state at mount, when the application doesn't control it (EF10). */
   initialEditing?: CellEditingState
 }
 

@@ -159,7 +159,7 @@ export type RowContribution<TSelected = any> = TargetContribution<
   TSelected
 >
 
-/** Строка и ячейка под событием тела; у незагруженной строки `row` нет. */
+/** Row and cell under a body event; an unloaded row has no `row`. */
 export interface BodyEventTarget {
   table: Table<any, any>
   row?: Row<any, any>
@@ -168,17 +168,17 @@ export interface BodyEventTarget {
   cellElement?: HTMLElement
 }
 
-type BodyEventHandler<E> = (event: E, target: BodyEventTarget) => void
+export type BodyEventHandler<E> = (event: E, target: BodyEventTarget) => void
 
-/** События над телом, делегированные от корня грида. */
+/** Body events delegated from the grid root. */
 export interface BodyEvents {
   mousedown?: BodyEventHandler<MouseEvent>
   click?: BodyEventHandler<MouseEvent>
   dblclick?: BodyEventHandler<MouseEvent>
-  /** Указатель вошёл в другую ячейку тела. */
+  /** The pointer entered another body cell. */
   hover?: BodyEventHandler<MouseEvent>
   copy?: BodyEventHandler<ClipboardEvent>
-  /** Вставка и вырезание над телом (ADR 0219). */
+  /** Paste and cut over the body (ADR 0219). */
   paste?: BodyEventHandler<ClipboardEvent>
   cut?: BodyEventHandler<ClipboardEvent>
   contextmenu?: BodyEventHandler<MouseEvent>
@@ -209,10 +209,10 @@ export interface RootContribution {
   events?: BodyEvents
 }
 
-/** Клавиша навигации в канале клавиш. */
+/** A navigation key in the key channel. */
 export interface NavigationKeyEvent {
   key: string
-  /** Код клавиши: сочетания с буквой — по нему, на любой раскладке. */
+  /** Key code: letter shortcuts match on it, on any keyboard layout. */
   code: string
   shiftKey: boolean
   ctrlKey: boolean
@@ -223,18 +223,18 @@ export interface NavigationKeyEvent {
 export interface NavigationKeyContext {
   table: Table<any, any>
   active: { rowIndex: number; columnIndex: number }
-  /** Строк на экран тела: шаг `PageUp` и `PageDown`. */
+  /** Rows per body screen: the `PageUp` and `PageDown` step. */
   pageRows: number
 }
 
-/** Вклад в клавиши навигации (ADR 0170, §4). */
+/** Contribution to navigation keys (ADR 0170, §4). */
 export interface NavigationKeys {
   id: string
-  /** Сочетания для сводки клавиш (ADR 0232, KX18). */
+  /** Shortcuts for the key summary (ADR 0232, KX18). */
   shortcuts?: readonly KeyboardShortcutDefinition[]
-  /** Клавиша до хода активной ячейки; `true` — плагин её взял. */
+  /** A key before the active cell moves; `true` means the plugin handled it. */
   onKey?: (event: NavigationKeyEvent, context: NavigationKeyContext) => boolean
-  /** Активная ячейка сменилась с клавиатуры. */
+  /** The active cell changed from the keyboard. */
   onActiveCellChange?: (
     table: Table<any, any>,
     next: { rowIndex: number; columnIndex: number },
@@ -820,22 +820,22 @@ export const notifyActiveCellChange = (
 
 // --- Канал для авторов плагинов (ADR 0173) --------------------------------------------
 
-/** Вклад автора в ячейку или строку: атрибуты `data-<id>-*` и `aria-*`, переменные `--<id>-*`. */
+/** An author's contribution to a cell or row: `data-<id>-*` and `aria-*` attributes, `--<id>-*` variables. */
 export interface PluginBodyOutput {
   attrs?: Record<string, string | number | boolean | undefined>
   style?: Record<string, string>
 }
 
-/** Ячейка тела для вклада автора. */
+/** A body cell for an author's contribution. */
 export interface PluginCellContext {
   table: Table<any, any>
   cell: Cell<any, any, unknown>
   rowIndex: number
-  /** Клавиатурная навигация включена у грида. */
+  /** Keyboard navigation is enabled on the grid. */
   navigation: boolean
 }
 
-/** Строка тела для вклада автора. */
+/** A body row for an author's contribution. */
 export interface PluginRowContext {
   table: Table<any, any>
   row: Row<any, any>
@@ -844,20 +844,20 @@ export interface PluginRowContext {
 }
 
 /**
- * Вклад автора в цель тела: выбор из состояния таблицы и вклад по нему. Цель
- * перерисовывается, только когда выбор изменился.
+ * An author's contribution to a body target: a selection from table state and a contribution
+ * computed from it. The target re-renders only when the selection changes.
  */
 export interface PluginTargetBody<TContext, TSelected = any> {
   /**
-   * Ключи состояния таблицы, которые читает `select` — прямо или через методы строки и
-   * ячейки; цель перерисовывается только на их смену. Свой срез плагина входит сам (ADR 0195).
+   * Table state keys that `select` reads, directly or through row and cell methods; the target
+   * re-renders only when they change. The plugin's own slice is included automatically (ADR 0195).
    */
   slices: readonly string[]
   select: (state: Record<string, unknown>, context: TContext) => TSelected
   render: (selected: TSelected, context: TContext) => PluginBodyOutput | null
 }
 
-/** События над телом, строка и ячейка события, корень и клавиши — для вклада автора. */
+/** Body events, the event's row and cell, root and keys — for an author's contribution. */
 export type PluginBodyEvents = BodyEvents
 export type PluginBodyEventTarget = BodyEventTarget
 export type PluginRootContext = RootContributionContext
@@ -865,17 +865,17 @@ export type PluginRootHookProps = RootHookProps
 export type PluginKeyEvent = NavigationKeyEvent
 export type PluginKeyContext = NavigationKeyContext
 
-/** Вклад автора в корень грида: атрибуты таблицы, события над телом, хук. */
+/** An author's contribution to the grid root: table attributes, body events, a hook. */
 export interface PluginRootBody {
   attrs?: (context: RootContributionContext) => PluginBodyOutput['attrs']
   events?: BodyEvents
   useRoot?: (props: RootHookProps) => ReactNode | void
 }
 
-/** Вклад автора в клавиши навигации. */
+/** An author's contribution to navigation keys. */
 export type PluginKeysBody = Omit<NavigationKeys, 'id'>
 
-/** Поле `body` записи `definePlugin` (ADR 0173). */
+/** The `body` field of a `definePlugin` entry (ADR 0173). */
 export interface PluginBody {
   cell?: PluginTargetBody<PluginCellContext>
   row?: PluginTargetBody<PluginRowContext>

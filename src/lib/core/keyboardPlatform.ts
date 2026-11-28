@@ -4,10 +4,10 @@
  * сама, опция ядра `keyboardPlatform` задаёт её явно.
  */
 
-/** Платформа клавиатуры: `apple` — macOS, iPadOS, iOS. */
+/** Keyboard platform: `apple` means macOS, iPadOS, iOS. */
 export type KeyboardPlatform = 'apple' | 'other'
 
-/** Опция ядра: `'auto'` — по браузеру. */
+/** Core option: `'auto'` detects it from the browser. */
 export type KeyboardPlatformOption = 'auto' | KeyboardPlatform
 
 const APPLE = /mac|iphone|ipad|ipod|ios/i

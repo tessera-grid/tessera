@@ -1,7 +1,7 @@
 import type { RowTransaction } from '../../core/rowTransactions'
 import type { ColumnFiltersState, SortingState } from '../../types'
 
-/** Запрос строк `[start, end)` под текущие сортировку, фильтры и поиск (ADR 0138, §1). */
+/** Request for rows `[start, end)` under the current sorting, filters and search (ADR 0138, §1). */
 export interface ServerRowsRequest {
   start: number
   end: number
@@ -9,25 +9,25 @@ export interface ServerRowsRequest {
   columnFilters: ColumnFiltersState
   globalFilter: string
   signal: AbortSignal
-  /** Строка, чьих детей просят (ленивые дети, ADR 0138, §14); у корней — нет. */
+  /** The row whose children are requested (lazy children, ADR 0138, §14); none for roots. */
   parentId?: string
-  /** Колонки группировки по уровням (ADR 0144); без группировки — пусто. */
+  /** Grouping columns by level (ADR 0144); empty without grouping. */
   grouping: string[]
-  /** Значения групп от корня до уровня запроса; у корня — пусто. */
+  /** Group values from the root to the requested level; empty at the root. */
   groupKeys: unknown[]
-  /** Колонка → имя её `aggregationFn` (`sum`, `count`, `mean`…); только строковые. */
+  /** Column → the name of its `aggregationFn` (`sum`, `count`, `mean`…); string names only. */
   aggregations: Record<string, string>
-  /** Колонки с `aggregationScope: 'all'`: итог и агрегаты групп — по всем узлам дерева (ADR 0229). */
+  /** Columns with `aggregationScope: 'all'`: the total and group aggregates span all tree nodes (ADR 0229). */
   aggregationScopes: Record<string, 'all'>
 }
 
 export interface ServerRowsResponse<TData = unknown> {
   rows: TData[]
-  /** Итог, если сервер его знает. */
+  /** The total, if the server knows it. */
   rowCount?: number
-  /** Итоги колонок по всей выборке (ADR 0144, §4); читаются из ответа корня. */
+  /** Column totals over the whole result set (ADR 0144, §4); read from the root response. */
   totals?: Record<string, unknown>
-  /** Строк данных во всей выборке при группировке: корень тогда — группы. */
+  /** Data rows in the whole result set with grouping: then the root holds groups. */
   leafCount?: number
 }
 
@@ -36,20 +36,20 @@ export interface ServerRowsResponse<TData = unknown> {
  * перезапроса. `index` — место добавленных в ветке `parentId` (в списке уже без удалённых);
  * без него таблица тихо перезапрашивает окно.
  */
-/** Транзакция строк — одна форма с клиентской (ADR 0194, §4). */
+/** A row transaction — the same shape as on the client (ADR 0194, §4). */
 export type ServerRowTransaction<TData = any> = RowTransaction<TData>
 
-/** Итог транзакции: применена, окно перезапрошено или ветки нет в раскладке. */
+/** Transaction result: applied, the window was requested again, or the branch isn't in the layout. */
 export type ServerRowTransactionResult =
   'applied' | 'refetch' | 'branchNotLoaded'
 
 export interface ServerRowModelHooks<TData = any> {
-  /** Загрузить строки; читается живо. */
+  /** Loads rows; read live. */
   getRows?: (
     request: ServerRowsRequest,
   ) => PromiseLike<ServerRowsResponse<TData>> | ServerRowsResponse<TData>
-  /** Строк в группе — из строки-группы ответа (ADR 0144, §2); читается живо. */
+  /** Rows in a group — from the group row of the response (ADR 0144, §2); read live. */
   getGroupChildCount?: (row: TData) => number | undefined
-  /** Строк данных в группе на всех уровнях — для подписи (ADR 0184); читается живо. */
+  /** Data rows in a group at all levels — for its label (ADR 0184); read live. */
   getGroupRowCount?: (row: TData) => number | undefined
 }

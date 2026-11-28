@@ -2,13 +2,13 @@
 import type { Row } from '../../types'
 
 /**
- * Охват «Выбрать всё» в шапке (ADR 0179): строки после фильтров на всех страницах, текущей
- * страницы или все строки данных, и скрытые фильтром.
+ * Scope of "Select all" in the header (ADR 0179): rows after filters on all pages, the current
+ * page, or all data rows, and rows hidden by a filter.
  */
 export type SelectAllScope = 'filtered' | 'currentPage' | 'all'
 
 export interface RowSelectionHooks {
   onSelectRow: (row: Row<any, any>, selected: boolean) => void
-  /** Флажок шапки выбрал (`true`) или снял строки охвата `scope`. */
+  /** The header checkbox selected (`true`) or cleared the rows of scope `scope`. */
   onSelectAllRows: (selected: boolean, scope: SelectAllScope) => void
 }

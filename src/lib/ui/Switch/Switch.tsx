@@ -8,13 +8,13 @@ import { usePendingControl } from '../buttonStates/useButtonStates'
 import styles from './Switch.module.css'
 
 export type SwitchProps = ComponentPropsWithoutRef<typeof BaseSwitch.Root> & {
-  /** Ждёт сохранения: дуга по контуру, `aria-busy`, нажатия игнорируются (ADR 0176, AC5). */
+  /** Waiting to be saved: an arc along the outline, `aria-busy`, presses are ignored (ADR 0176, AC5). */
   pending?: boolean
 }
 
 /**
- * Переключатель на базе Base UI (фундамент shadcn). Стилизован под наш набор
- * CSS-переменных (--tsr-comp-switch-*).
+ * A switch built on Base UI (the foundation of shadcn). Styled with our set of CSS variables
+ * (--tsr-comp-switch-*).
  */
 export const Switch = forwardRef<
   ElementRef<typeof BaseSwitch.Root>,

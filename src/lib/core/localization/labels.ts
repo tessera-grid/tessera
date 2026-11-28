@@ -1,38 +1,38 @@
 import type { LabelDictionary } from './resolveLabels'
 
 /**
- * Подписи элементов управления таблицы. Любую можно переопределить через
- * проп `localization` у DataGrid — для локализации или смены формулировок.
+ * Labels of the table's controls. Any of them can be overridden through the DataGrid
+ * `localization` prop — to translate or reword them.
  */
 export interface TableLabels {
-  /** Доступное имя таблицы (`aria-label` на `role="table"`) */
+  /** Accessible name of the table (`aria-label` on `role="table"`) */
   table: string
-  /** Доступное имя верхнего тулбара (`aria-label` на `role="toolbar"`) */
+  /** Accessible name of the top toolbar (`aria-label` on `role="toolbar"`) */
   toolbar: string
-  /** Значение ячейки булевой колонки для скринридера (ADR 0172, DT6) */
+  /** Value of a boolean column cell for screen readers (ADR 0172, DT6) */
   booleanTrue: string
   booleanFalse: string
-  /** Доступное имя кебаб-кнопки меню действий заголовка (`aria-label`/тултип) */
+  /** Accessible name of the header actions kebab button (`aria-label`/tooltip) */
   headerMenu: string
-  /** Кнопка «Настройки вида» (ADR 0215). */
+  /** The "View settings" button (ADR 0215). */
   viewSettings: string
-  /** Кнопка «Настройки вида» с активными разделами. */
+  /** The "View settings" button with active sections. */
   viewSettingsActive: (count: number) => string
-  /** Короткое значение неактивного раздела. */
+  /** Short value of an inactive section. */
   viewSettingsNone: string
-  /** Короткое значение раздела: сколько включено. */
+  /** Short value of a section: how many are enabled. */
   viewSettingsActiveCount: (count: number) => string
-  /** Короткое значение раздела: сколько черновиков (ADR 0178). */
+  /** Short value of a section: how many drafts (ADR 0178). */
   viewSettingsDraftCount: (count: number) => string
-  /** Короткое значение раздела, который просто включён. */
+  /** Short value of a section that is simply enabled. */
   viewSettingsOn: string
-  /** Доступное имя строки раздела: имя и полное значение. */
+  /** Accessible name of a section row: the name and the full value. */
   viewSettingsSectionName: (section: string, value: string) => string
-  /** Значок скрытой колонки у имени уровня: тултип и доступное имя. */
+  /** Hidden-column icon next to a level name: tooltip and accessible name. */
   viewSettingsHiddenColumn: string
-  /** Подсказка точки уровня (ADR 0224). */
+  /** Hint of a level's dot (ADR 0224). */
   viewSettingsLevelHint: string
-  /** Сводка сочетаний клавиш и её поиск (ADR 0232, KX17–KX19). */
+  /** Keyboard shortcut summary and its search (ADR 0232, KX17–KX19). */
   shortcuts: string
   shortcutsSearch: string
   shortcutsEmpty: string
@@ -51,73 +51,73 @@ export interface TableLabels {
   shortcutAlt: string
   shortcutShiftApple: string
   shortcutShift: string
-  /** Доступное имя кебаб-кнопки меню действий строки (`aria-label`/тултип) */
+  /** Accessible name of the row actions kebab button (`aria-label`/tooltip) */
   rowMenu: string
-  /** Доступное имя кебаба, в который свёрнуты включённые действия (`count` — их число) */
+  /** Accessible name of a kebab holding active actions (`count` is their number) */
   withActiveCount: (name: string, count: number) => string
-  /** Объявление: модуль поповера или меню (`name` — подпись элемента) не загрузился */
+  /** Announcement: a popover or menu module (`name` is the element's label) failed to load */
   loadFailed: (name: string) => string
-  /** Описание пункта меню, чья доступность проверяется (ADR 0078) */
+  /** Description of a menu item whose availability is being checked (ADR 0078) */
   availabilityChecking: string
-  /** Причина блокировки пункта, если проверка доступности не удалась */
+  /** Why an item is disabled when the availability check failed */
   availabilityCheckFailed: string
-  /** Описание пункта меню, чьё действие выполняется */
+  /** Description of a menu item whose action is running */
   actionRunning: string
-  /** Текст отказа действия меню, если ошибка его не несёт */
+  /** Failure text of a menu action when the error carries none */
   actionFailedFallback: string
-  /** Тултип и описание кнопки с отметкой отказа (ADR 0127): `reason` — текст причины */
+  /** Tooltip and description of a button with a failure mark (ADR 0127): `reason` is the reason text */
   actionFailedRetry: (reason: string) => string
-  /** Доступное имя и тултип кебаба: ждущие действия (`names` — их подписи через запятую) */
+  /** Kebab accessible name and tooltip: pending actions (`names` — their labels, comma-separated) */
   actionsRunning: (names: string) => string
-  /** Доступное имя и тултип кебаба: упавшие действия */
+  /** Kebab accessible name and tooltip: failed actions */
   actionsFailed: (names: string) => string
-  /** Объявление: действие меню завершилось */
+  /** Announcement: a menu action completed */
   announceActionDone: (name: string) => string
-  /** Объявление: действие меню отклонено (`error` — текст отказа) */
+  /** Announcement: a menu action was rejected (`error` is the failure text) */
   announceActionFailed: (name: string, error: string) => string
-  /** Имя и тултип занятой кнопки и ждущего пункта меню: отмена действия (ADR 0153) */
+  /** Name and tooltip of a busy button and a pending menu item: cancel the action (ADR 0153) */
   cancelAction: (name: string) => string
-  /** Объявление: действие отменено */
+  /** Announcement: the action was cancelled */
   announceActionCancelled: (name: string) => string
-  /** Кнопка отмены в плашке ожидания серверного действия */
+  /** Cancel button in the pending alert of a server action */
   cancel: string
-  /** Плашка ожидания серверного действия (ADR 0153, §5) */
+  /** Pending alert of a server action (ADR 0153, §5) */
   pendingSorting: string
   pendingFiltering: string
   pendingSearch: string
   pendingPage: string
   pendingGrouping: string
-  /** Плашка ожидания смены сводки колонки (ADR 0230, §7) */
+  /** Pending alert of a column summary change (ADR 0230, §7) */
   pendingAggregation: string
   pendingCopy: string
   pendingSelectPage: string
   pendingPaste: string
   pendingFill: string
-  /** Отмена и повтор ждут строк серверной модели (ADR 0222, §7) */
+  /** Undo and redo are waiting for server row model rows (ADR 0222, §7) */
   pendingUndo: string
   pendingRedo: string
-  /** Запись в ячейки ждёт ответа на вопрос предела (ADR 0223) */
+  /** A cell write is waiting for the answer to the limit question (ADR 0223) */
   pendingWrite: string
-  /** Вопрос предела записи и его кнопки (ADR 0223, §2) */
+  /** The write limit question and its buttons (ADR 0223, §2) */
   writeQuestion: (count: number) => string
   writeConfirm: string
   writeDecline: string
-  /** Отказ предела записи: ячеек больше предела (ADR 0223, §2) */
+  /** Write limit refusal: more cells than the limit (ADR 0223, §2) */
   writeOverLimit: (count: number, max: number) => string
-  /** Вопрос перед вставкой на месте плашки ожидания и его кнопки (ADR 0219, WR3) */
+  /** The question before pasting, in place of the pending alert, and its buttons (ADR 0219, WR3) */
   pasteQuestionValue: (value: string) => string
   pasteQuestionCount: (count: number) => string
   pasteConfirm: string
   pasteDecline: string
-  /** Плашка ожидания действия над всей таблицей: его имя */
+  /** Pending alert of an action on the whole table: its name */
   pendingAction: (name: string) => string
-  /** Имя серверного действия в объявлении отмены (ADR 0153, §8) */
+  /** Server action name in the cancellation announcement (ADR 0153, §8) */
   actionSorting: string
   actionFiltering: string
   actionSearch: string
   actionPage: string
   actionGrouping: string
-  /** Действие: сводка колонки (ADR 0230, §7) */
+  /** Action: column summary (ADR 0230, §7) */
   actionAggregation: string
   actionCopy: string
   actionSelectPage: string
@@ -126,57 +126,57 @@ export interface TableLabels {
   actionUndo: string
   actionRedo: string
   actionWrite: string
-  /** Доступное имя строки «назад» раздела меню (ADR 0079) */
+  /** Accessible name of the "back" row of a menu section (ADR 0079) */
   menuBack: (section: string) => string
-  /** Объявление: открыт раздел меню */
+  /** Announcement: a menu section opened */
   announceMenuSection: (section: string) => string
-  /** Строка раздела меню, чьи пункты не загрузились */
+  /** A menu section row whose items failed to load */
   sectionLoadFailed: string
-  /** Текст отказа сохранения ячейки, если сервер не прислал свой (ADR 0041) */
+  /** Failure text of a cell save when the server sent none (ADR 0041) */
   saveFailed: string
-  /** Доступное имя точки ошибки ячейки без кнопки правки (ADR 0150) */
+  /** Accessible name of a cell error dot without an edit button (ADR 0150) */
   cellError: string
-  /** Повтор отклонённого сохранения в поповере отметки ячейки (ADR 0177). */
+  /** Retry a rejected save in the cell mark popover (ADR 0177). */
   failureRetry: string
-  /** Сбросить отклонённое изменение ячейки (ADR 0177). */
+  /** Discard a rejected cell change (ADR 0177). */
   failureDiscard: string
-  /** Кнопка действия с неприменённым черновиком (ADR 0178, §3). */
+  /** Button of an action with an unapplied draft (ADR 0178, §3). */
   actionDraft: (action: string) => string
-  /** Включённое действие, у которого есть неприменённое изменение. */
+  /** An active action that has an unapplied change. */
   actionActiveDraft: (action: string) => string
-  /** Отметка несохранённого значения ячейки: имя и причина «было, стало». */
+  /** Mark of an unsaved cell value: name and the "was, now" reason. */
   draftWas: string
   draftNow: string
   cellNotSaved: string
-  /** Цель записи — ячейка: колонка и номер строки. */
+  /** Write target — a cell: the column and the row number. */
   failureTargetCell: (column: string, row: number) => string
-  /** Цель записи — строка. */
+  /** Write target — a row. */
   failureTargetRow: (row: number) => string
-  /** Цель записи — запрос данных всей таблицы. */
+  /** Write target — the whole table's data request. */
   failureTargetTable: string
-  /** Изменение занятого объекта не принято: он ещё сохраняется (ADR 0177, OB6). */
+  /** A change to a busy object was not accepted: it is still saving (ADR 0177, OB6). */
   announceStillSaving: (name: string) => string
-  /** Доступное имя индикатора загрузки и объявление скелета первой загрузки */
+  /** Accessible name of the loading indicator and the first-load skeleton announcement */
   loading: string
-  /** Объявление смены сортировки: по возрастанию, по убыванию, сортировка снята */
+  /** Sort change announcement: ascending, descending, sorting removed */
   announceSortAscending: (column: string) => string
   announceSortDescending: (column: string) => string
   announceSortCleared: string
-  /** Объявление окончания загрузки (`rows` — число строк) */
+  /** Announcement that loading finished (`rows` is the row count) */
   announceLoaded: (rows: number) => string
-  /** Заголовок заглушки и объявление пустого результата (ADR 0123) */
+  /** Stub title and the empty-result announcement (ADR 0123) */
   noData: string
-  /** Заглушка: видимых колонок нет (ADR 0123) */
+  /** Stub: there are no visible columns (ADR 0123) */
   noColumnsTitle: string
-  /** Число строк группы рядом с её значением (серверная группировка, ADR 0144) */
+  /** Row count of a group next to its value (server grouping, ADR 0144) */
   groupRowCount: (count: number) => string
-  /** Строка ошибки догрузки (ADR 0081): текст и кнопка повтора */
+  /** Load-more error row (ADR 0081): text and the retry button */
   loadMoreRetry: string
-  /** Строка ошибки отказавшего блока серверной модели строк (ADR 0138) */
+  /** Error row of a failed server row model block (ADR 0138) */
   rowsLoadFailed: string
   /**
-   * Ошибка загрузки данных (ADR 0096): заголовок плашки обновления и заглушки первой
-   * загрузки, кнопки повтора и закрытия, объявления (`reason` — причина, если есть)
+   * Data load error (ADR 0096): title of the refresh alert and the first-load stub, retry and
+   * close buttons, announcements (`reason` is the reason, if any)
    */
   loadErrorTitle: string
   loadFailedTitle: string
@@ -186,13 +186,13 @@ export interface TableLabels {
   announceLoadErrorReason: (reason: string) => string
   announceLoadFailed: string
   announceLoadFailedReason: (reason: string) => string
-  /** Причина отказа серверного действия по его виду, если сервер не прислал свою (ADR 0116) */
+  /** Failure reason of a server action by its kind, when the server sent none (ADR 0116) */
   serverActionFailedSorting: string
   serverActionFailedFiltering: string
   serverActionFailedSearch: string
   serverActionFailedPagination: string
   serverActionFailedGrouping: string
-  /** Отказ сервера в смене сводки колонки (ADR 0230, §7) */
+  /** The server refused a column summary change (ADR 0230, §7) */
   serverActionFailedAggregation: string
   serverActionFailedCopy: string
   serverActionFailedPaste: string
@@ -201,48 +201,48 @@ export interface TableLabels {
   serverActionFailedRedo: string
   serverActionFailedWrite: string
   serverActionFailedSelectPage: string
-  /** Объявление числа строк после применения фильтра или поиска */
+  /** Announcement of the row count after a filter or search */
   announceFilteredRows: (count: number) => string
-  /** Объявление клиентской транзакции строк: строки добавлены и удалены (ADR 0199, §6) */
+  /** Client row transaction announcement: rows added and removed (ADR 0199, §6) */
   announceRowsAdded: (count: number) => string
   announceRowsRemoved: (count: number) => string
-  /** Действие: переход активной ячейки */
+  /** Action: the active cell moved */
   actionMoveActiveCell: string
-  /** Действие: вход в режим действия ячейки */
+  /** Action: entering a cell's action mode */
   actionEnterActionMode: string
-  /** Действие: выход из режима действия ячейки */
+  /** Action: leaving a cell's action mode */
   actionExitActionMode: string
-  /** Действие: подсветка строки, ячейки или колонки */
+  /** Action: highlight a row, cell or column */
   actionHighlight: string
-  /** Действие: снять подсветку */
+  /** Action: remove a highlight */
   actionClearHighlights: string
-  /** Действие: вспышка итога на цели */
+  /** Action: an outcome flash on the target */
   actionFlashOutcome: string
-  /** Действие: транзакция строк */
+  /** Action: a row transaction */
   actionRowTransaction: string
-  /** Действие: прокрутка к строке */
+  /** Action: scroll to a row */
   actionScrollToRow: string
-  /** Действие: сброс фильтров из заглушки */
+  /** Action: clear filters from the stub */
   actionResetFilters: string
-  /** Действие: повтор загрузки данных */
+  /** Action: retry loading data */
   actionRetryLoad: string
-  /** Действие: отмена ожидающих операций таблицы */
+  /** Action: cancel the table's pending operations */
   actionCancelPending: string
-  /** Действие: открыть меню */
+  /** Action: open a menu */
   actionOpenMenu: string
-  /** Действие: закрыть меню */
+  /** Action: close a menu */
   actionCloseMenu: string
-  /** Действие: открыть панель действия */
+  /** Action: open an action's panel */
   actionOpenPanel: string
-  /** Действие: войти в раздел меню */
+  /** Action: enter a menu section */
   actionEnterSection: string
-  /** Действие: выйти из раздела меню */
+  /** Action: leave a menu section */
   actionLeaveSection: string
-  /** Действие: запрос серверного действия и его итог */
+  /** Action: a server action request and its outcome */
   actionServerRequest: string
-  /** Действие: ждущий запрос заменён новым */
+  /** Action: a pending request was replaced by a new one */
   actionServerReplaced: string
-  /** Действие: сохранение значения ячейки из своего контрола (`trackCellAction`) */
+  /** Action: saving a cell value from a custom control (`trackCellAction`) */
   actionSave: string
 }
 
@@ -250,8 +250,8 @@ export interface TableLabels {
 type DefaultLabels = Record<keyof TableLabels, string> & LabelDictionary
 
 /**
- * Английские подписи — словарь-образец для приложения (ADR 0132, §7). Ключ без суффикса —
- * форма «остальные числа» и запасная для языка с другим набором форм.
+ * English labels — the sample dictionary for the application (ADR 0132, §7). A key without a
+ * suffix is the "other" plural form and the fallback for languages with other forms.
  */
 export const DEFAULT_LABELS = {
   table: 'Data table',

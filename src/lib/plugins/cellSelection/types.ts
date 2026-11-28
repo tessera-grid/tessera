@@ -7,47 +7,47 @@ import type {
 
 export type { CellSelectionPredicateCell }
 
-/** Для каких указателей показан маркер угла выделения (ADR 0198). По умолчанию — для обоих. */
+/** Which pointers show the selection corner handle (ADR 0198). Both by default. */
 export interface CellSelectionHandleOptions {
-  /** Мышь, тачпад, стилус: квадрат в правом нижнем углу. */
+  /** Mouse, touchpad, stylus: a square in the bottom-right corner. */
   mouse?: boolean
-  /** Палец: круги в противоположных углах. */
+  /** Finger: circles in opposite corners. */
   touch?: boolean
   /**
-   * Что делает протяжка квадрата (ADR 0219, §4): `'range'` — меняет диапазон, `'fill'` — тянет
-   * значения в ячейки. По умолчанию `'range'`; круги пальца всегда меняют диапазон.
+   * What dragging the square does (ADR 0219, §4): `'range'` changes the range, `'fill'` drags
+   * values into cells. `'range'` by default; the finger circles always change the range.
    */
   mode?: 'range' | 'fill'
-  /** Оси протяжки значения. По умолчанию `'xy'`. */
+  /** Fill axes. `'xy'` by default. */
   direction?: 'x' | 'y' | 'xy'
-  /** Своё значение ячейки протяжки; `ctx.skip` — оставить ячейку как есть. */
+  /** Custom value of a fill cell; `ctx.skip` leaves the cell as is. */
   getFillValue?: FillValue
 }
 
-/** Ячейка протяжки значения для `getFillValue` (ADR 0219, WR26). */
+/** A fill cell for `getFillValue` (ADR 0219, WR26). */
 export interface FillContext {
-  /** Исходные значения линии вдоль оси протяжки. */
+  /** Source values of the line along the fill axis. */
   values: readonly unknown[]
-  /** Номер ячейки протяжки на линии: 0 — ближайшая к исходным. */
+  /** Number of the fill cell on the line: 0 is the closest to the source. */
   index: number
   direction: 'down' | 'up' | 'right' | 'left'
   rowId: string
   columnId: string
-  /** Строка ячейки. */
+  /** The cell's row. */
   row: unknown
-  /** Значение по правилу копии, ряда или повтора. */
+  /** The value by the copy, series or repeat rule. */
   value: unknown
-  /** Вернуть, чтобы оставить ячейку как есть. */
+  /** Return it to leave the cell as is. */
   skip: symbol
 }
 
 export type FillValue = (ctx: FillContext) => unknown
 
 /**
- * Свой разбор буфера при вставке (ADR 0219, WR3): строки и ячейки текста, `null` — отмена,
- * промис — ожидание с отменой; `signal` прерывается, когда ожидание отменили или его сменила
- * новая вставка. `confirm()` спрашивает пользователя «Вставить?» на месте плашки ожидания:
- * `true` — вставить, `false` — отказ или отмена.
+ * Custom clipboard parsing on paste (ADR 0219, WR3): rows and cells of text, `null` cancels, a
+ * promise is a pending state with cancel; `signal` is aborted when the wait is cancelled or a new
+ * paste replaces it. `confirm()` asks the user "Paste?" in place of the pending alert: `true`
+ * pastes, `false` refuses or cancels.
  */
 export type ParseClipboard = (
   clipboard: { text: string; html: string },
@@ -58,28 +58,28 @@ export interface CellSelectionOptions extends Omit<
   CellSelectionModelOptions,
   'enabled' | 'canSelectCell'
 > {
-  /** `false` — плагин присутствует, но инертен (present-but-disabled). */
+  /** `false` — the plugin is present but inert (present-but-disabled). */
   enabled?: boolean
-  /** Shift-расширение прямоугольного диапазона. По умолчанию `true`. */
+  /** Shift extends a rectangular range. `true` by default. */
   rangeSelection?: boolean
-  /** Протяжка выделения мышью (drag). По умолчанию `true`. */
+  /** Drag to select with the mouse. `true` by default. */
   dragSelection?: boolean
-  /** Ctrl/Cmd — добавление/вычитание отдельного прямоугольника. По умолчанию `true`. */
+  /** Ctrl/Cmd adds or subtracts a separate rectangle. `true` by default. */
   multiRange?: boolean
-  /** Сужает выбор; сервисные колонки (действия) не выбираются при любом предикате. */
+  /** Narrows selection; service columns (actions) are never selectable, whatever the predicate. */
   canSelectCell?: (cell: CellSelectionPredicateCell) => boolean
-  /** Больше строк выделения копирование не кладёт в буфер. По умолчанию 10 000. */
+  /** Copy doesn't put more selection rows than this into the clipboard. 10,000 by default. */
   maxCopyRows?: number
   /**
-   * Маркер угла активного диапазона, за который диапазон растягивают (ADR 0198). `false` —
-   * маркера нет. По умолчанию — для мыши и пальца.
+   * Corner handle of the active range, used to stretch the range (ADR 0198). `false` — no
+   * handle. For mouse and finger by default.
    */
   handle?: false | CellSelectionHandleOptions
   /**
-   * Вставка из буфера, вырезание и очистка выделения (ADR 0219): пишут через плагин правки.
-   * `false` — их нет. По умолчанию `true`.
+   * Paste from the clipboard, cut and clear of the selection (ADR 0219): they write through the
+   * editing plugin. `false` — none of them. `true` by default.
    */
   paste?: boolean
-  /** Свой разбор буфера при вставке; главнее своего формата и текста. */
+  /** Custom clipboard parsing on paste; takes precedence over the custom format and text. */
   parseClipboard?: ParseClipboard
 }

@@ -4,7 +4,7 @@
  * операции и место исполнителя — его кладёт в опции таблицы плагин правки.
  */
 
-/** Откуда операция: встроенные триггеры, приложение, отмена и повтор (ADR 0222). */
+/** Where an operation came from: built-in triggers, the application, undo and redo (ADR 0222). */
 export type CellWriteSource =
   | 'paste'
   | 'fill'
@@ -17,7 +17,7 @@ export type CellWriteSource =
   | 'undo'
   | 'redo'
 
-/** Ячейка сохранённой записи: значения до и после в типе колонки. */
+/** A cell of a saved write: values before and after, in the column type. */
 export interface WrittenCell {
   rowId: string
   columnId: string
@@ -25,24 +25,24 @@ export interface WrittenCell {
   after: unknown
 }
 
-/** Новая или удалённая строка до сохранения (ADR 0222, §13): значения и место в списке. */
+/** A row added or removed before saving (ADR 0222, §13): its values and place in the list. */
 export interface WrittenRow {
   rowId: string
   change: 'insert' | 'delete'
   values: unknown
-  /** Место в видимом списке. */
+  /** Place in the visible list. */
   index: number
-  /** Строка над ней; нет — строка первая. */
+  /** The row above it; none means it is the first row. */
   after?: string
 }
 
-/** Место строки: родитель и место среди сестёр. */
+/** A row's place: its parent and position among its siblings. */
 export interface RowPlace {
   parentId?: string
   index: number
 }
 
-/** Перенос строки (ADR 0222, §13). */
+/** A row move (ADR 0222, §13). */
 export interface WrittenMove {
   rowId: string
   from: RowPlace
@@ -50,26 +50,26 @@ export interface WrittenMove {
 }
 
 /**
- * Итог операции записи (ADR 0222, §2): что сохранено, что отклонено. `'edit'` — правка ячейки в
- * редакторе. `draft` — записано черновиками режима «Применить», без сервера; `cancelled` —
- * ожидание прервано «стопом», итог неизвестен.
+ * Result of a write operation (ADR 0222, §2): what was saved and what was rejected. `'edit'` is a
+ * cell edit in the editor. `draft` means it was written as drafts in "Apply" mode, without the
+ * server; `cancelled` means waiting was stopped, the result is unknown.
  */
 export interface CellsWritten {
   id: string
   source: CellWriteSource | 'edit' | 'row' | 'move' | 'discard' | 'apply'
   cells: readonly WrittenCell[]
-  /** Исполнитель подтвердил, что ключи ячеек в записи различны. */
+  /** The executor confirmed that cell keys in the write are distinct. */
   uniqueCells?: boolean
   refused: readonly { rowId: string; columnId: string }[]
   draft?: boolean
   cancelled?: boolean
-  /** Строки до сохранения: добавленные и удалённые (§13). */
+  /** Rows before saving: added and removed (§13). */
   rows?: readonly WrittenRow[]
-  /** Перенос строки; у отказа — нет, `failed`. */
+  /** The row move; absent on refusal, see `failed`. */
   move?: WrittenMove
-  /** Перенос отклонён (§13). */
+  /** The move was rejected (§13). */
   failed?: boolean
-  /** «Применить» сохранило столько изменений (ADR 0222, §14); у источника `'apply'`. */
+  /** "Apply" saved this many changes (ADR 0222, §14); set for source `'apply'`. */
   applied?: number
 }
 
@@ -107,8 +107,8 @@ export const notifyCellsWritten = (
   )
 
 /**
- * Изменение одной ячейки: набранный или вставленный текст разбирается по типу колонки,
- * значение пишется как есть.
+ * A change to one cell: typed or pasted text is parsed by the column type, a value is written
+ * as is.
  */
 export type CellWrite =
   | { rowId: string; columnId: string; text: string }
@@ -118,11 +118,11 @@ export interface CellWriteOptions {
   source?: CellWriteSource
 }
 
-/** Пределы одной операции записи в ячейках (ADR 0223, §1). */
+/** Limits of one cell write operation (ADR 0223, §1). */
 export interface WriteLimits {
-  /** Больше стольких ячеек — вопрос перед записью. */
+  /** More cells than this — ask before writing. */
   confirm?: number
-  /** Больше стольких ячеек — отказ без записи. */
+  /** More cells than this — refuse without writing. */
   max?: number
 }
 
@@ -141,19 +141,19 @@ export const writeLimitsOf = (table: unknown): Required<WriteLimits> => {
   }
 }
 
-/** Итог разбора операции: что записано, пропущено и не разобрано (сохранение — отдельно). */
+/** Parse result of an operation: what was written, skipped and not parsed (saving is separate). */
 export interface CellWriteReport {
-  /** Id операции — он же `id` пакета `onCommitEdits`. */
+  /** Operation id — also the `id` of the `onCommitEdits` batch. */
   id: string
-  /** Ячейки, которые получили значение (в том числе прежнее). */
+  /** Cells that received a value (including an unchanged one). */
   written: number
-  /** Нередактируемые ячейки: только для чтения, служебные, ждущие сохранения. */
+  /** Non-editable cells: read-only, service, or waiting to be saved. */
   skipped: number
-  /** Текст не разобрался по типу или не прошёл `validate`. */
+  /** Text did not parse for the type or failed `validate`. */
   invalid: number
-  /** Операция больше предела `max` — ничего не записано (ADR 0223). */
+  /** The operation exceeds the `max` limit — nothing was written (ADR 0223). */
   limited?: { count: number; max: number }
-  /** На вопрос предела ответили «нет» — ничего не записано. */
+  /** The limit question was answered "no" — nothing was written. */
   declined?: boolean
 }
 

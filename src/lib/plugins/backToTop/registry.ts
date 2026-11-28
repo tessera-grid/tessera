@@ -10,13 +10,13 @@ import { BACK_TO_TOP, backToTopInertReason } from './model'
 import { backToTopLabels } from './labels'
 
 export interface BackToTopOptions {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
-  /** С какой прокрутки тела (px) видна кнопка; по умолчанию — две высоты тела. */
+  /** Body scroll (px) from which the button is shown; two body heights by default. */
   threshold?: number
-  /** С какой горизонтальной прокрутки (px) видна «к первой колонке»; по умолчанию — две ширины тела. */
+  /** Horizontal scroll (px) from which "to first column" is shown; two body widths by default. */
   horizontalThreshold?: number
-  /** Какие кнопки показывать; по умолчанию обе. */
+  /** Which buttons to show; both by default. */
   axes?: 'vertical' | 'horizontal' | 'both'
 }
 

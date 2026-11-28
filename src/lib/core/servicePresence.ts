@@ -5,15 +5,15 @@
  */
 import type { NarrowContext, NarrowState } from './effectiveState'
 
-/** Таблица, которую видит условие: только исходные строки. */
+/** The table as the condition sees it: source rows only. */
 export interface PresenceTable {
   getCoreRowModel: () => { rows: readonly { subRows: readonly unknown[] }[] }
 }
 
 /**
- * Нужна ли колонка. `table` — экземпляр с текущими данными или `null`;
- * `undefined` — без таблицы не посчитать. Смотрит только на исходные данные,
- * аргументы плагина и свёртку набора, не на вид (SC2).
+ * Whether the column is needed. `table` is the instance with current data or `null`;
+ * `undefined` means it can't be computed without a table. Looks only at the source data, the
+ * plugin's arguments and the fold of the set, not at the view (SC2).
  */
 export type ServicePresence<TOptions> = (
   table: PresenceTable | null,
@@ -21,7 +21,7 @@ export type ServicePresence<TOptions> = (
   opts: TOptions,
 ) => boolean | undefined
 
-/** Опция плагина с условием: `'always'` показывает колонку независимо от него. */
+/** A plugin option with a condition: `'always'` shows the column regardless of it. */
 export type ServiceColumnMode = 'auto' | 'always'
 
 export const presenceNarrow =

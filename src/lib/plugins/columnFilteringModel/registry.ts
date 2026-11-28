@@ -20,13 +20,13 @@ import { filteringLabels } from '../../shared/filtering/labels'
 import { ownStage } from '../../core/rowEngine/engine'
 
 export interface ColumnFilteringModelOptions {
-  /** `false` — плагин отключён: фильтры колонок не применяются. */
+  /** `false` disables the plugin: column filters are not applied. */
   enabled?: boolean
-  /** Фильтры колонок: задаёт приложение; без него срез хранит грид. */
+  /** Column filters set by the application; without it the grid keeps the slice. */
   columnFilters?: ColumnFiltersState
-  /** Новое значение среза после каждого изменения изнутри грида. */
+  /** New slice value after each change from inside the grid. */
   onColumnFiltersChange?: (next: ColumnFiltersState) => void
-  /** Начальное значение среза, которым владеет грид. */
+  /** Initial value of the slice the grid owns. */
   initialColumnFilters?: ColumnFiltersState
 }
 

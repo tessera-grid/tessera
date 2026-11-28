@@ -13,9 +13,9 @@ import { columnVisibilityLabels } from './labels'
 import { columnsSection } from './viewSettingsSection'
 
 export interface ColumnVisibilityOptions {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
-  /** Бизнес-колбэк: пользователь показал или скрыл колонки из меню. */
+  /** Business callback: the user showed or hid columns from the menu. */
   onToggleColumnVisibility?: ColumnVisibilityHooks['onToggleColumnVisibility']
 }
 

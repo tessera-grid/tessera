@@ -10,7 +10,7 @@ export const valueChangeFlashFeature: TableFeature = {
 }
 
 export interface ValueChangeFlashColumnDef {
-  /** `false` — колонка не вспыхивает; `'direction'` — тон и стрелка роста или падения. */
+  /** `false` — the column doesn't flash; `'direction'` — tone and arrow for up or down. */
   changeFlash?: boolean | 'direction'
 }
 

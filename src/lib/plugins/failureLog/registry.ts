@@ -21,7 +21,7 @@ import { failureLogLabels } from './labels'
 export const FAILURE_LOG_TOOLBAR_GROUP = 'failures'
 
 export interface FailureLogOptions extends ToolbarPlacementOption {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
 }
 

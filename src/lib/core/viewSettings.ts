@@ -11,21 +11,21 @@ import type { TableLabels } from './localization'
 import type { ToolbarPlacement } from './toolbar'
 import type { Preloadable } from '../util/preloadable'
 
-/** Уровень простого раздела: условие фильтра, уровень сортировки или группировки. */
+/** A level of a simple section: a filter condition, a sort or grouping level. */
 export interface ViewSettingsLevel {
   id: string
-  /** Колонка или своё имя уровня. */
+  /** The column or a custom level name. */
   label: string
-  /** «По убыванию, приоритет 1 из 2», текст условия. */
+  /** "Descending, priority 1 of 2", the condition text. */
   description?: string
-  /** Уровень стоит на скрытой колонке. */
+  /** The level is on a hidden column. */
   hidden?: boolean
-  /** Доступное имя кнопки снятия. */
+  /** Accessible name of the remove button. */
   removeLabel: string
   remove: (source: DebugActionSource) => void
 }
 
-/** Панель раздела: ленивый компонент со своей разметкой (ADR 0215, §3). */
+/** A section panel: a lazy component with its own markup (ADR 0215, §3). */
 export interface ViewSettingsPanelProps {
   table: unknown
 }
@@ -36,31 +36,31 @@ export type ViewSettingsPanel = Preloadable & {
 
 export interface ViewSettingsSection {
   id: string
-  /** Место среди разделов: встроенные — 10…50, разделы авторов — после них. */
+  /** Place among sections: built-in ones are 10…50, authors' sections come after them. */
   order?: number
-  /** Владелец в канале действий. */
+  /** The owner in the debug-action channel. */
   plugin: string
   label: (labels: TableLabels) => string
-  /** Ключ значка в `icons`. */
+  /** Icon key in `icons`. */
   icon: string
-  /** Срезы состояния, на которые подписаны кнопка и строка раздела. */
+  /** State slices the section's button and row subscribe to. */
   slices: readonly string[]
-  /** Строка раздела есть; по умолчанию — всегда. */
+  /** The section row exists; always by default. */
   visible?: (table: unknown) => boolean
-  /** Раздел активен: входит в число на кнопке. */
+  /** The section is active: counted in the number on the button. */
   active: (table: unknown) => boolean
-  /** Короткое значение строки (§4). */
+  /** Short value of the row (§4). */
   value: (table: unknown, labels: TableLabels) => string
-  /** Полное значение для доступного имени строки. */
+  /** Full value for the row's accessible name. */
   description?: (table: unknown, labels: TableLabels) => string
-  /** Уровни простого раздела. */
+  /** Levels of a simple section. */
   levels?: (table: unknown, labels: TableLabels) => ViewSettingsLevel[]
-  /** Сброс простого раздела — кнопка внизу справа. */
+  /** Reset of a simple section — the button at the bottom right. */
   reset?: {
     label: (labels: TableLabels) => string
     run: (table: unknown, source: DebugActionSource) => void
   }
-  /** Своя панель раздела вместо уровней; такой раздел открывается всегда. */
+  /** A custom section panel instead of levels; such a section can always be opened. */
   panel?: ViewSettingsPanel
 }
 
@@ -143,7 +143,7 @@ const definedOnly = ({ group, order, align }: ToolbarPlacement) => ({
 })
 
 /**
- * Короткое значение раздела (§4): сколько включено и сколько черновиков; ничего — «нет».
+ * Short value of a section (§4): how many are enabled and how many drafts; nothing — "none".
  */
 export const countViewSettingsValue = (
   labels: TableLabels,

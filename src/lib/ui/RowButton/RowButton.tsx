@@ -14,7 +14,7 @@ import '../cellControls/buttonVisibility.css'
 
 export interface RowButtonProps
   extends DerivedButtonProps, RevealProps, ActiveProps {
-  /** Тултип и доступное имя кнопки (`aria-label`). */
+  /** Tooltip and accessible name of the button (`aria-label`). */
   label: string
   icon: ReactNode
 }

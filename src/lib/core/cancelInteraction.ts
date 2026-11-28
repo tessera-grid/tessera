@@ -6,7 +6,7 @@
 
 import { readPluginHooks } from './definePlugin/channels'
 
-/** Причина завершения сессии без результата (ADR 0040, §1). */
+/** Why a session ended without a result (ADR 0040, §1). */
 export type SessionCancelReason = 'cancel' | 'revoke' | 'unavailable'
 
 type HooksTable = { getHooks: () => unknown; atoms: object }

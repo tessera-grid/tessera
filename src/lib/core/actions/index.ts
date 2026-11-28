@@ -9,26 +9,26 @@ import { announcerLabels } from '../announcer'
 import { actionOwnerOf } from '../actionOwners'
 import { logWarn } from '../../util/logger'
 
-/** Id действия — та же пара, что у события канала действий (ADR 0125). */
+/** Action id — the same pair as in a debug-action event (ADR 0125). */
 export interface ActionId {
   plugin: string
   action: string
 }
 
-/** Действие с параметрами подписи — как его хранят отказы и черновики. */
+/** An action with its label parameters, as failures and drafts store it. */
 export interface ActionRef extends ActionId {
   params?: Record<string, unknown>
 }
 
-/** Подпись действия: одна на все места показа (ADR 0182, §3). */
+/** Action label: one for every place the action is shown (ADR 0182, §3). */
 export type ActionLabel = (
   labels: TableLabels,
   params?: Record<string, unknown>,
 ) => string
 
 /**
- * Действия владельца: имя действия → подпись или ссылка на действие другого владельца с той
- * же подписью (пункт контекстного меню, который выполняет чужое действие).
+ * An owner's actions: action name → label, or a reference to another owner's action with the
+ * same label (a context-menu item that runs someone else's action).
  */
 export type ActionLabels = Record<string, ActionLabel | ActionId>
 
@@ -124,15 +124,15 @@ export const actionLabelOf = (
 export interface NamedAction<TCtx> {
   id: string
   /**
-   * Подпись действия без контекста: входит в справочник под `<владелец>/<id>` (ADR 0182, §4).
+   * Action label without context: listed in the catalog as `<owner>/<id>` (ADR 0182, §4).
    */
   label?: ActionLabel
   /**
-   * Действие справочника по контексту — разные состояния — разные действия: имя у того же
-   * владельца или id чужого; по умолчанию `id`.
+   * Catalog action for a context — different states are different actions: a name of the same
+   * owner or another owner's id; `id` by default.
    */
   action?: (ctx: TCtx) => string | ActionId
-  /** Параметры подписи по контексту. */
+  /** Label parameters for a context. */
   params?: (ctx: TCtx, labels: TableLabels) => Record<string, unknown>
 }
 

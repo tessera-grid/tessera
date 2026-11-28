@@ -15,12 +15,12 @@ import type {
 } from '../createSlots'
 import { useSlice } from '../reactivity'
 
-/** Пропсы компонента ячейки: нативный `CellContext` + инъектированный слайс хуков. */
+/** Props of a cell component: the native `CellContext` plus the injected hooks slice. */
 export interface PluginCellProps<THooks = never> extends CellComponentProps {
   hooks: THooks
 }
 
-/** Пропсы компонента заголовка: нативный `HeaderContext` + слайс хуков. */
+/** Props of a header component: the native `HeaderContext` plus the hooks slice. */
 export interface PluginHeaderProps<
   THooks = never,
 > extends HeaderComponentProps {
@@ -28,9 +28,8 @@ export interface PluginHeaderProps<
 }
 
 /**
- * Живое чтение hook-слайса плагина из общего канала `table.getHooks()` по его scope
- * (= `id`). Единственный контролируемый каст — здесь; компонент получает слайс
- * типизированным пропсом.
+ * Reads a plugin's hooks slice live from the shared `table.getHooks()` channel by its scope
+ * (= `id`). The only controlled cast is here; the component gets the slice as a typed prop.
  */
 export const readPluginHooks = <THooks>(
   table: { getHooks: () => unknown },
@@ -50,9 +49,9 @@ export const savedSliceOf = (table: unknown, key: string): unknown =>
   ).options.pluginSavedSlice?.(key)
 
 /**
- * Пропсы компонента ячейки плагина с ЛОКАЛЬНЫМ состоянием: hooks-слайс + пара
- * `state: [value, setter]`. `TState` выводится из декларации `state` плагина;
- * состояние приватно (читается пропсом, а не общим `getState`).
+ * Props of a plugin cell component with LOCAL state: the hooks slice plus a
+ * `state: [value, setter]` pair. `TState` is inferred from the plugin's `state` declaration;
+ * the state is private (read through the prop, not the shared `getState`).
  */
 export interface PluginCellStateProps<
   THooks,
@@ -62,9 +61,9 @@ export interface PluginCellStateProps<
 }
 
 /**
- * Пропсы компонента-владельца ячейки (`cellSlot`): к hooks + локальному `state`
- * добавляется `content` — собственный рендер ячейки. Владелец рантайм решает,
- * показать его (`{content}`) или заместить своим UI (напр. инлайн-редактором).
+ * Props of a cell owner component (`cellSlot`): hooks and local `state` plus `content` — the
+ * cell's own render. The owner decides at runtime whether to show it (`{content}`) or replace
+ * it with its own UI (for example, an inline editor).
  */
 export interface PluginCellOwnerProps<
   THooks,
@@ -153,9 +152,9 @@ type SlotDeclOf<TName extends string, TContext, THooks, TState> =
         })
 
 /**
- * Слот в `definePlugin`: компонент получает контекст своего слота и каналы плагина,
- * типы которых выведены из `hooks`/`state` того же вызова. Компонент, ждущий другой
- * тип канала, не присваивается — ошибка компиляции в вызове `definePlugin` (DP7).
+ * A slot in `definePlugin`: the component gets its slot's context and the plugin's channels,
+ * typed from `hooks`/`state` of the same call. A component expecting another channel type
+ * isn't assignable — a compile error in the `definePlugin` call (DP7).
  */
 export type PluginSlotDecl<THooks = Record<never, never>, TState = never> =
   | SlotDeclOf<

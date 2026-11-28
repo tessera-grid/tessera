@@ -15,119 +15,121 @@ export const groupKeysOf = (id: string | undefined): unknown[] =>
     ? (JSON.parse(id.slice(GROUP_ROW_PREFIX.length)) as unknown[])
     : []
 
-/** Строки тела: по индексу в списке и по id. */
+/** Body rows: by index in the list and by id. */
 export interface RowSource<TRow = unknown> {
-  /** Строк в списке, в том числе ещё не загруженных. */
+  /** Rows in the list, including those not loaded yet. */
   count: () => number
-  /** Строка по индексу в списке; `undefined` — нет или ещё не загружена. */
+  /** Row at an index in the list; `undefined` — none, or not loaded yet. */
   at: (index: number) => TRow | undefined
   /**
-   * Ключ строки виртуализатора — её индекс, а не id: виртуализатор спрашивает ключи всех строк
-   * на каждой смене их числа, а замер высоты остаётся за местом в списке (ADR 0138, §14).
+   * Virtualizer key of a row — its index, not its id: the virtualizer asks for the keys of all
+   * rows on every count change, and the measured height stays with the place in the list
+   * (ADR 0138, §14).
    */
   keyByIndex?: boolean
-  /** Строка данных по id, в том числе не показанная в списке (свёрнутая, на другой странице). */
+  /** Data row by id, including one not shown in the list (collapsed, on another page). */
   byId: (id: string) => TRow | undefined
-  /** Индекс строки в списке; `-1` — её нет в списке. */
+  /** Index of a row in the list; `-1` — it's not in the list. */
   indexOf: (id: string) => number
-  /** Строки данных, что есть у грида, и вне списка: другая страница, свёрнутая ветка. */
+  /** Data rows the grid has, including outside the list: another page, a collapsed branch. */
   loadedRows: () => Iterable<TRow>
-  /** Ветка раскрытой строки ждёт первого ответа источника (ADR 0155, §3). */
+  /** The branch of an expanded row is waiting for the source's first answer (ADR 0155, §3). */
   branchLoading?: (id: string) => boolean
-  /** Отменить загрузку ветки: человек отменил раскрытие. */
+  /** Cancels loading a branch: the user cancelled the expand. */
   cancelBranch?: (id: string) => void
   /**
-   * Позвать `done` на первый ответ ветки, которую раскрыл человек; ветка уже в кэше, отказ,
-   * отмена запроса окном или сворачиванием, новая выборка — вызова нет (ADR 0138, SD55–SD60).
+   * Calls `done` on the first answer for a branch the user expanded; a cached branch, a failure,
+   * a request cancelled by the window or by collapsing, or a new result set — no call
+   * (ADR 0138, SD55–SD60).
    */
   whenBranchArrives?: (
     id: string,
     done: (arrival: BranchArrival) => void,
   ) => void
   /**
-   * Весь список массивом, если он загружен целиком (клиентский режим). Без него дерево,
-   * линии, движение строк и место броска в теле не считаются.
+   * The whole list as an array, when it is fully loaded (client mode). Without it, the tree,
+   * lines, row motion and the drop position in the body are not computed.
    */
   rows?: () => readonly TRow[]
-  /** Окно строк тела с запасом и быстрая прокрутка (ADR 0008): источник грузит по ним. */
+  /** Body row window with overscan, and fast scrolling (ADR 0008): the source loads by them. */
   observe?: (window: RowWindow) => void
-  /** Отказавшие участки списка: на их месте тело рисует строку ошибки с повтором. */
+  /** Failed parts of the list: the body renders an error row with retry in their place. */
   failures?: () => readonly RowFailure[]
   /**
-   * Отказ, когда не загружено ничего: вместо тела — заглушка ошибки (ADR 0096). Тот же
-   * объект, пока отказ тот же.
+   * Failure when nothing is loaded: the error stub replaces the body (ADR 0096). The same object
+   * while the failure is the same.
    */
   loadError?: () => RowLoadError | undefined
   /**
-   * Сортировка, фильтры, поиск или агрегаты сменились: список начинается заново (ADR 0138, §6);
-   * `true` — началась новая выборка.
+   * Sorting, filters, search or aggregates changed: the list starts over (ADR 0138, §6); `true`
+   * means a new result set started.
    */
   sync?: () => boolean
   /**
-   * Строки окна под текущей выборкой пришли; отказ — причиной блока. Промис серверного
-   * действия вместо ответа приложения (ADR 0116).
+   * Window rows for the current result set arrived; a failure carries the block's reason. A
+   * server action's promise instead of the application's answer (ADR 0116).
    */
   whenLoaded?: () => PromiseLike<void>
-  /** Окно новой выборки ещё идёт: прежние строки под свечением обновления (ADR 0094). */
+  /** The new result set's window is still loading: previous rows stay under the refresh glow (ADR 0094). */
   refreshing?: () => boolean
-  /** Итог для `aria-rowcount`, `-1` — неизвестен; главнее опции `getTotalRowCount`. */
+  /** Total for `aria-rowcount`, `-1` — unknown; takes precedence over the `getTotalRowCount` option. */
   total?: () => number
   /**
-   * `aria-*` дерева строки по индексу: уровень, место среди соседей и их число — для
-   * строк, которых нет в массиве `rows` (серверная модель, ADR 0138, §14).
+   * Tree `aria-*` of a row by index: level, position among siblings and their count — for rows
+   * not in the `rows` array (server row model, ADR 0138, §14).
    */
   treeAria?: (index: number) =>
     | {
         level: number
         posInSet: number
-        /** Оценка по загруженному, когда итог неизвестен: её читают линии, перенос и вложение. */
+        /** An estimate from loaded rows when the total is unknown: lines, moves and nesting read it. */
         setSize: number
-        /** Итог набора известен; нет — у строки `aria-setsize="-1"` (ADR 0226, §3). */
+        /** The set's total is known; otherwise the row has `aria-setsize="-1"` (ADR 0226, §3). */
         sizeKnown?: boolean
       }
     | undefined
-  /** `id` предков строки дерева от корня (серверная модель, ADR 0162). */
+  /** `id`s of a tree row's ancestors from the root (server row model, ADR 0162). */
   ancestors?: (id: string) => readonly string[]
   /**
-   * Строк в ветке на всех уровнях, у корня (`undefined`) — во всём дереве; неизвестно —
-   * `undefined` (серверная модель, ADR 0162).
+   * Rows in a branch at all levels, at the root (`undefined`) — in the whole tree; unknown —
+   * `undefined` (server row model, ADR 0162).
    */
   subtreeSize?: (parentId: string | undefined) => number | undefined
   /**
-   * Линии дерева строки по индексу — из раскладки, без прохода по строкам (серверная
-   * модель, ADR 0161).
+   * Tree lines of a row by index — from the layout, without walking rows (server row model,
+   * ADR 0161).
    */
   treeLines?: (
     index: number,
   ) => { depth: number; branch: string; open: boolean } | undefined
-  /** Строк верхнего уровня: «Выбрать всё» в дереве — их итог. */
+  /** Top-level rows: "Select all" in a tree totals them. */
   rootCount?: () => number
-  /** Итог строк верхнего уровня известен; без него пейджер — «из многих» (ADR 0158, §4). */
+  /** The top-level row total is known; without it the pager shows "of many" (ADR 0158, §4). */
   rootCountKnown?: () => boolean
   /**
-   * Сквозной индекс первой строки источника: источник — страница списка (ADR 0158), его
-   * индексы — от её начала.
+   * Running index of the source's first row: the source is a page of the list (ADR 0158), its
+   * indexes start from the page start.
    */
   offset?: () => number
-  /** Индексы строк верхнего уровня текущей страницы, от её начала (ADR 0188). */
+  /** Indexes of top-level rows of the current page, from its start (ADR 0188). */
   pageRootIndexes?: () => number[]
-  /** Страница, где стоит строка со сквозным индексом; `undefined` — такой строки нет. */
+  /** The page holding the row with a running index; `undefined` — no such row. */
   pageOf?: (listIndex: number) => number | undefined
-  /** Сквозной индекс строки, в том числе на другой странице; `-1` — её нет в списке. */
+  /** Running index of a row, including on another page; `-1` — it's not in the list. */
   listIndexOf?: (id: string) => number
   /**
-   * Строк в ветке `parentId` (без него — корней) и известен ли её итог; ветка не раскрыта —
-   * `undefined` (ADR 0159, §4).
+   * Rows in branch `parentId` (without it — roots) and whether its total is known; a branch
+   * that isn't expanded gives `undefined` (ADR 0159, §4).
    */
   branchSize?: (
     parentId: string | undefined,
   ) => { count: number; known: boolean } | undefined
-  /** Загруженная строка на месте `index` ветки `parentId` (без него — корней); нет — `undefined`. */
+  /** The loaded row at `index` of branch `parentId` (without it — roots); none — `undefined`. */
   rowIn?: (parentId: string | undefined, index: number) => TRow | undefined
   /**
-   * Перенести строку на место `index` в ветке `parentId` (без него — среди корней) — сразу,
-   * без запроса (ADR 0159, §2, §4). Строки нет в кэше — встаёт по данным `stray.original`, а
-   * её место `stray.from` закрывается; без них — `false`. Ветка не загружена — `false`.
+   * Moves a row to `index` in branch `parentId` (without it — among roots) right away, without a
+   * request (ADR 0159, §2, §4). A row not in the cache is placed from `stray.original` and its
+   * place `stray.from` closes; without them — `false`. A branch not loaded — `false`.
    */
   moveRow?: (
     id: string,
@@ -137,40 +139,40 @@ export interface RowSource<TRow = unknown> {
       from: { parentId?: string; index: number }
     },
   ) => boolean
-  /** Строк в группе по строке-группе (серверная группировка, ADR 0144); иначе — нет. */
+  /** Rows in a group by its group row (server grouping, ADR 0144); otherwise none. */
   groupChildCount?(row: TRow): number | undefined
-  /** Строк данных в группе — для подписи (ADR 0184, §8); неизвестно — `undefined`. */
+  /** Data rows in a group — for its label (ADR 0184, §8); unknown — `undefined`. */
   groupRowCount?(row: TRow): number | undefined
-  /** Итоги колонок выборки — из ответа сервера (ADR 0144, §4). */
+  /** Column totals of the result set — from the server response (ADR 0144, §4). */
   totals?: () => Record<string, unknown> | undefined
-  /** Строк данных в выборке при серверной группировке (ADR 0144, §5). */
+  /** Data rows in the result set with server grouping (ADR 0144, §5). */
   leafCount?: () => number | undefined
-  /** Номер выборки: растёт с новой сортировкой, фильтрами, поиском и сбросом кэша. */
+  /** Result set number: grows with new sorting, filters, search and cache reset. */
   epoch?: () => number
-  /** Номер раскладки списка: растёт с каждой сменой строк по индексам. */
+  /** List layout number: grows with each change of rows by index. */
   version?: () => number
   /**
-   * Смены списка после раскладки `version`, каждая — в индексах раскладки перед ней;
-   * `undefined` — журнал её не помнит (ADR 0146, §6).
+   * List changes after layout `version`, each in the indexes of the layout before it;
+   * `undefined` — the log doesn't remember it (ADR 0146, §6).
    */
   changesSince?: (version: number) => readonly RowListChange[][] | undefined
-  /** Строки `[first, last]`: загруженные — сразу, прочие — запросом мимо кэша окна. */
+  /** Rows `[first, last]`: loaded ones right away, others by a request bypassing the window cache. */
   loadRange?: (
     first: number,
     last: number,
     signal: AbortSignal,
   ) => Promise<readonly (TRow | undefined)[]>
   /**
-   * Все строки списка на всех страницах: загруженные и запросом мимо кэша (ADR 0190). Строк
-   * больше `limit` — `undefined`: известный итог проверяется до запросов.
+   * All rows of the list on all pages: loaded ones and the rest by a request bypassing the cache
+   * (ADR 0190). More rows than `limit` — `undefined`: a known total is checked before requests.
    */
   loadList?: (
     limit: number,
     signal: AbortSignal,
   ) => Promise<readonly TRow[] | undefined>
-  /** Источник под слоем строк до сохранения (ADR 0178, §7): строки данных без новых. */
+  /** The source under the layer of rows before saving (ADR 0178, §7): data rows without new ones. */
   base?: RowSource<TRow>
-  /** Новые строки слоя и их места в списке; журнал смен о них не знает (ADR 0178, DR50). */
+  /** New rows of the layer and their places in the list; the change log doesn't know them (ADR 0178, DR50). */
   newRows?: () => readonly NewRowPlace[]
 }
 
@@ -210,25 +212,25 @@ export const watchSlices = (
   }
 }
 
-/** Первый ответ ветки: пришедшие строки и итог ветки, а если он неизвестен — их число. */
+/** First answer for a branch: the rows that arrived and the branch total, or their count if it's unknown. */
 export interface BranchArrival {
   rowIds: readonly string[]
   count: number
 }
 
-/** Новая строка и её место в списке. */
+/** A new row and its place in the list. */
 export interface NewRowPlace {
   id: string
   index: number
 }
 
-/** Смена списка: в месте `at` вставлено `delta` строк, при `delta < 0` — удалено. */
+/** A list change: `delta` rows were inserted at `at`; removed when `delta < 0`. */
 export interface RowListChange {
   at: number
   delta: number
 }
 
-/** Отказ загрузки строк `[start, end)` (ADR 0138, §11). */
+/** Failure to load rows `[start, end)` (ADR 0138, §11). */
 export interface RowFailure {
   start: number
   end: number
@@ -241,7 +243,7 @@ export interface RowLoadError {
   retry: () => void
 }
 
-/** Смонтированные строки тела `[first, last]` и быстрая прокрутка. */
+/** Mounted body rows `[first, last]` and fast scrolling. */
 export interface RowWindow {
   first: number
   last: number

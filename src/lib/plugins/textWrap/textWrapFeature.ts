@@ -6,17 +6,17 @@ import type { RowData, TableFeature, TableFeatures } from '../../types'
 
 export const textWrapFeature: TableFeature = {}
 
-/** Высота строки по содержимому ячейки колонки; `maxLines` — свой предел строк. */
+/** Row height from the content of the column's cell; `maxLines` is a custom line limit. */
 export type AutoHeight = boolean | { maxLines?: number }
 
 export interface TextWrapColumnDef {
-  /** Перенос текста ячейки в высоте строки: целые строки, последняя — с `…`. */
+  /** Wraps cell text within the row height: whole lines, the last one with `…`. */
   wrapText?: boolean
-  /** Колонка задаёт высоту строки по содержимому; текст переносится сам. */
+  /** The column sets the row height from its content; the text wraps by itself. */
   autoHeight?: AutoHeight
-  /** Перенос подписи заголовка в высоте строки шапки: целые строки, последняя — с `…`. */
+  /** Wraps the header label within the header row height: whole lines, the last one with `…`. */
   wrapHeaderText?: boolean
-  /** Заголовок задаёт высоту своего уровня шапки по содержимому; подпись переносится сама. */
+  /** The header sets the height of its header level from its content; the label wraps by itself. */
   autoHeaderHeight?: boolean
 }
 

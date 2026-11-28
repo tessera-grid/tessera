@@ -2,43 +2,43 @@
 import { defineLabels } from '../../core/localization'
 
 export interface ColumnVisibilityLabels {
-  /** Кнопка тулбара и доступное имя меню колонок (`columnVisibility`) */
+  /** Toolbar button and accessible name of the columns menu (`columnVisibility`) */
   columns: string
-  /** Короткое значение раздела «Колонки» «Настроек вида»: ничего не скрыто (ADR 0215) */
+  /** Short value of the "Columns" section of "View settings": nothing is hidden (ADR 0215) */
   columnsAllVisible: string
-  /** Короткое значение раздела «Колонки» «Настроек вида»: сколько колонок скрыто */
+  /** Short value of the "Columns" section of "View settings": how many columns are hidden */
   columnsHiddenShort: (count: number) => string
-  /** Плейсхолдер и доступное имя поиска в меню колонок */
+  /** Placeholder and accessible name of the search in the columns menu */
   searchColumns: string
-  /** Текст меню колонок, когда поиск ничего не нашёл */
+  /** Columns menu text when the search found nothing */
   noColumnsFound: string
-  /** Кнопка заглушки «все колонки скрыты»: показать все колонки */
+  /** Button of the "all columns hidden" stub: show all columns */
   showAllColumns: string
-  /** Флажок-корень дерева меню колонок: показать или скрыть все */
+  /** Root checkbox of the columns menu tree: show or hide all */
   allColumns: string
-  /** Подвал меню колонок: сколько колонок видно */
+  /** Columns menu footer: how many columns are visible */
   selectedColumns: (count: number) => string
-  /** Кнопка сброса видимости колонок к начальной */
+  /** Button that resets column visibility to the initial state */
   resetColumns: string
-  /** Пункт кебаба заголовка: скрыть колонку */
+  /** Header kebab item: hide the column */
   hideColumn: string
-  /** Пункт кебаба заголовка группы вложенной шапки: скрыть группу */
+  /** Kebab item of a nested header group: hide the group */
   hideGroup: string
-  /** Заглушка: все колонки скрыты (ADR 0123) */
+  /** Stub: all columns are hidden (ADR 0123) */
   columnsHiddenTitle: string
-  /** Действие: показать или скрыть колонку */
+  /** Action: show or hide a column */
   actionToggleColumn: string
-  /** Действие: снять сортировку, фильтр и группировку скрытой колонки (ADR 0204, HT4) */
+  /** Action: remove the sort, filter and grouping of a hidden column (ADR 0204, HT4) */
   actionClearTransforms: string
-  /** Пункт скрытой колонки в доступном имени (ADR 0204, HT3) */
+  /** A hidden column's item in the accessible name (ADR 0204, HT3) */
   hiddenColumn: string
-  /** Подсказка у пункта только что скрытой колонки: преобразования (`list`) остаются */
+  /** Hint on a just-hidden column's item: its transforms (`list`) remain */
   transformsKept: (list: readonly string[], count: number) => string
-  /** Подсказка пункта кебаба «Скрыть колонку»: преобразования останутся */
+  /** Hint of the "Hide column" kebab item: transforms will remain */
   transformsWillRemain: (list: readonly string[], count: number) => string
-  /** Тултип кнопки-ластика у скрытой колонки: что с ней сейчас (`transforms`) и что сделает нажатие */
+  /** Tooltip of the eraser button on a hidden column: what applies to it now (`transforms`) and what pressing does */
   activeTransforms: (transforms: string) => string
-  /** Объявление: колонки (`columns`) скрыты, их преобразования (`list`) остаются */
+  /** Announcement: columns (`columns`) were hidden, their transforms (`list`) remain */
   columnsHiddenKept: (
     columns: readonly string[],
     list: readonly string[],

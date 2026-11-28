@@ -2,7 +2,7 @@ import type { LoadOptions } from '../../core/columnOptions'
 import type { DateCellValue } from '../../core/dataTypes'
 import type { OptionValue } from '../../core/columnOptions'
 
-/** Тип фильтра колонки (ADR 0045, §2; ADR 0047, §1; ADR 0048): набор условий и UI. */
+/** Column filter type (ADR 0045, §2; ADR 0047, §1; ADR 0048): a set of conditions and UI. */
 export type ColumnFilterType =
   | 'text'
   | 'number'
@@ -15,16 +15,16 @@ export type ColumnFilterType =
 
 export type { DateCellValue, LoadOptions }
 
-/** Фильтр колонки, выведенный из её типа данных (ADR 0172, DT12): вид и уточнения. */
+/** A column filter derived from its data type (ADR 0172, DT12): the kind and refinements. */
 export type ColumnFilterDef =
   | ColumnFilterType
   | {
       type: ColumnFilterType
-      /** Булево: вариант «Пусто» — у булева фильтра всегда (ADR 0172). */
+      /** Boolean: the "Empty" option — a boolean filter always has it (ADR 0172). */
       nullable?: boolean
-      /** Дата: своё значение ячейки → `Date`, миллисекунды или ISO. */
+      /** Date: a custom cell value → `Date`, milliseconds or ISO. */
       parse?: (value: unknown) => DateCellValue
-      /** Справочник: варианты по строке поиска панели. */
+      /** Lookup: options by the panel's search string. */
       loadOptions?: LoadOptions
     }
 
@@ -42,8 +42,8 @@ export type NumberFilterOperator =
   | 'empty'
   | 'notEmpty'
 
-/** Условия без значения. */
-type EmptinessFilter = { operator: 'empty' } | { operator: 'notEmpty' }
+/** Conditions without a value. */
+export type EmptinessFilter = { operator: 'empty' } | { operator: 'notEmpty' }
 
 export type TextFilter =
   | {
@@ -53,7 +53,7 @@ export type TextFilter =
   | EmptinessFilter
 
 /** Граница `null` у «между» — открытый интервал с этой стороны. */
-/** Граница числового условия; у колонки `numberString` — десятичная строка (ADR 0174). */
+/** Bound of a numeric condition; for a `numberString` column — a decimal string (ADR 0174). */
 export type NumberBound = number | string
 
 export type NumberFilter =
@@ -64,20 +64,20 @@ export type NumberFilter =
   | { operator: 'between'; value: [NumberBound | null, NumberBound | null] }
   | EmptinessFilter
 
-/** «Все» — отсутствие фильтра; «Пусто» — вариант булева фильтра. */
+/** "All" means no filter; "Empty" is an option of the boolean filter. */
 export type BooleanFilter =
   { operator: 'equals'; value: boolean } | { operator: 'empty' }
 
 export type DateFilterOperator =
   'on' | 'before' | 'after' | 'between' | 'preset' | 'empty' | 'notEmpty'
 
-/** Пресет дат: считается от «сегодня» в момент применения (ADR 0047, §3). */
+/** A date preset: computed from "today" at the moment it's applied (ADR 0047, §3). */
 export type DateFilterPreset =
   'today' | 'yesterday' | 'last7Days' | 'last30Days' | 'thisMonth' | 'thisYear'
 
 /**
- * Фильтр даты: `'YYYY-MM-DD'` или `'YYYY-MM-DDTHH:mm'` (стенное время пояса
- * `timeZone`); граница `null` у «между» — открытый интервал.
+ * Date filter: `'YYYY-MM-DD'` or `'YYYY-MM-DDTHH:mm'` (wall-clock time in the `timeZone` zone);
+ * a `null` bound of "between" is an open interval.
  */
 export type DateFilter =
   | { operator: 'on' | 'before' | 'after'; value: string }
@@ -88,11 +88,11 @@ export type DateFilter =
 export type OptionFilterOperator =
   'anyOf' | 'allOf' | 'noneOf' | 'empty' | 'notEmpty'
 
-/** Фильтр вариантов: выбранные значения; «содержит все» — только у `multiselect`. */
+/** Option filter: selected values; "contains all" — only for `multiselect`. */
 export type OptionFilter =
   | { operator: 'anyOf' | 'allOf' | 'noneOf'; value: OptionValue[] }
   | EmptinessFilter
 
-/** Значение фильтра колонки в срезе `columnFilters`. */
+/** Value of a column filter in the `columnFilters` slice. */
 export type ColumnFilterValue =
   TextFilter | NumberFilter | BooleanFilter | DateFilter | OptionFilter

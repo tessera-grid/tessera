@@ -2,13 +2,13 @@
 import { defineLabels } from '../../core/localization'
 
 export interface FilteringLabels {
-  /** Короткие формы счётчиков в узкой нижней панели (ADR 0083, TX6); не обрезаются */
+  /** Short counter forms in a narrow status bar (ADR 0083, TX6); never truncated */
   filteredRowsShort: (shown: number, total: number) => string
-  /** Заглушка пустого результата фильтрации */
+  /** Stub of an empty filtering result */
   noRowsMatchFilters: string
-  /** Сброс всех фильтров (сводка, заглушка пустого результата) */
+  /** Clear all filters (summary, empty-result stub) */
   resetFilters: string
-  /** «Показано N из M» в нижней панели */
+  /** "Showing N of M" in the status bar */
   filteredRows: (shown: number, total: number) => string
 }
 

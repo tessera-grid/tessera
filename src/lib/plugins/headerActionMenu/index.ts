@@ -9,11 +9,11 @@ import { menuSlotsOf, noSlotActionsReason } from '../../core/pluginDiagnostics'
 
 export interface HeaderActionMenuOptions {
   enabled?: boolean
-  /** `auto` — по порогу; `always` — всегда. По умолчанию `auto`. */
+  /** `auto` — by threshold; `always` — always. `auto` by default. */
   mode?: 'auto' | 'always'
-  /** Порог схлопывания для `auto` (по умолчанию 3). */
+  /** Collapse threshold for `auto` (3 by default). */
   threshold?: number
-  /** Слоты заголовка (по умолчанию `['rightHeaderSlot']`). */
+  /** Header slots (`['rightHeaderSlot']` by default). */
   slots?: HeaderActionSlot[]
 }
 

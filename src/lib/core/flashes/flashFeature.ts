@@ -22,8 +22,8 @@ import { parseDuration } from '../../util/cssTime'
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
 
 /**
- * Итог: здесь появилось, сервер принял запись, грид вернул прежнее; значение сменилось извне,
- * выросло, упало (ADR 0221).
+ * Outcome: something appeared here, the server accepted the write, the grid reverted it; the
+ * value changed from outside, went up, went down (ADR 0221).
  */
 export type FlashOutcome =
   'arrived' | 'accepted' | 'reverted' | 'changed' | 'up' | 'down'

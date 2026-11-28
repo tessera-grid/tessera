@@ -18,7 +18,7 @@ import { cellSelectionModelBody } from './contribution'
 
 export type { CellSelectionRange, CellSelectionState } from './indexSelection'
 
-/** Ячейка для предиката выбираемости — подмножество ячейки TanStack v9. */
+/** A cell for the selectability predicate — a subset of the TanStack v9 cell. */
 export interface CellSelectionPredicateCell {
   id: string
   column: {
@@ -30,15 +30,15 @@ export interface CellSelectionPredicateCell {
 }
 
 export interface CellSelectionModelOptions {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
-  /** Сужает выбор; сервисные колонки (действия) не выбираются при любом предикате. */
+  /** Narrows selection; service columns (actions) are never selectable, whatever the predicate. */
   canSelectCell?: (cell: CellSelectionPredicateCell) => boolean
-  /** Диапазоны выделения: задаёт приложение; без него срез хранит грид. */
+  /** Selection ranges set by the application; without it the grid keeps the slice. */
   cellSelection?: CellSelectionState
-  /** Новое значение среза после каждого изменения изнутри грида. */
+  /** New slice value after each change from inside the grid. */
   onCellSelectionChange?: (next: CellSelectionState) => void
-  /** Начальное значение среза, которым владеет грид. */
+  /** Initial value of the slice the grid owns. */
   initialCellSelection?: CellSelectionState
 }
 
@@ -79,7 +79,7 @@ const cellSelectionModelEntry = definePlugin<CellSelectionModelOptions>()({
   },
 })
 
-/** Состояние ячейки и `aria-multiselectable` корня — вкладом в тело (ADR 0170, §5). */
+/** Cell state and the root's `aria-multiselectable` — as a body contribution (ADR 0170, §5). */
 export const cellSelectionModel = withBody(
   cellSelectionModelEntry,
   cellSelectionModelBody,

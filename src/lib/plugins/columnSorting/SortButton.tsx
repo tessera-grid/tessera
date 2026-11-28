@@ -18,9 +18,9 @@ import { columnSortingLabels } from './labels'
 export interface SortButtonProps extends DerivedButtonProps, RevealProps {
   operation: SortDirection | false
   nextOperation: SortDirection | false
-  /** Позиция столбца среди сортируемых (нумерация с нуля). */
+  /** Position of the column among the sorted ones (zero-based). */
   sortIndex?: number
-  /** Сколько столбцов сортируется всего. */
+  /** How many columns are sorted in total. */
   sortCount?: number
 }
 

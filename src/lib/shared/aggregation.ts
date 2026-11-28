@@ -45,7 +45,7 @@ export const aggregationFns = {
   uniqueCount: aggregationFn_uniqueCount,
 }
 
-/** Поле колонки `aggregationScope` — фича без поведения, только поле в карте фич. */
+/** The `aggregationScope` column field — a feature without behavior, only a field in the feature map. */
 export const aggregationScopeFeature: TableFeature = {}
 
 export type AggregationScope = 'top' | 'all'

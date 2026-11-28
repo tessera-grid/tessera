@@ -153,16 +153,16 @@ export type UseCreateTableParams<
     getSubRows?: (row: TData) => TData[] | undefined
 
     /**
-     * Срезы колонок (ADR 0120, §4). Срез плагина — аргументами его фабрики:
+     * Column slices (ADR 0120, §4). A plugin's slice goes in its factory's arguments:
      * `columnSorting({ sorting, onSortingChange })`.
      */
     state?: CoreTableState
-    /** Колбэки срезов колонок (прокидываются в опции v9 как есть). */
+    /** Callbacks for column slices (passed to v9 options as is). */
     handlers?: CoreTableHandlers
 
     /**
-     * Умолчания колонок без своих: размеры дополняют умолчания (`minSize` 48, `maxSize` 750),
-     * `aggregationScope` — строки дерева в агрегатах (ADR 0229).
+     * Defaults for columns that don't set their own: sizes extend the defaults (`minSize` 48,
+     * `maxSize` 750), `aggregationScope` — tree rows in aggregates (ADR 0229).
      */
     defaultColumn?: DefaultColumnSizing
   }

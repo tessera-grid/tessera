@@ -3,11 +3,11 @@ import { rowSourceOf } from './rowSource'
 
 export interface SkeletonOptions {
   /**
-   * Строк скелета: число — ровно столько; `'auto'` — сколько помещается по высоте
-   * (с пагинацией — не больше размера страницы).
+   * Skeleton rows: a number gives exactly that many; `'auto'` fits as many as the height allows
+   * (with pagination — no more than the page size).
    */
   rowsCount?: number | 'auto'
-  /** Колонок скелета, когда своих колонок у грида нет (`columns: []`). */
+  /** Skeleton columns when the grid has no columns of its own (`columns: []`). */
   columnsCount?: number
 }
 
@@ -133,8 +133,8 @@ export const getSkeletonTreeRows = (count: number): SkeletonTreeRow[] => {
 }
 
 /**
- * Идёт первая загрузка: грид и компоненты слотов показывают скелет (ADR 0060, SL21).
- * Отказ без строк главнее — вместо скелета заглушка ошибки (ADR 0096, LE9).
+ * The first load is in progress: the grid and slot components show a skeleton (ADR 0060, SL21).
+ * A failure without rows takes precedence — the error stub replaces the skeleton (ADR 0096, LE9).
  */
 export const isSkeletonShown = (table: unknown): boolean => {
   const { options } = table as {

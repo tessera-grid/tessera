@@ -21,7 +21,7 @@ export type {
   ExportValueContext,
 } from '../dataExportModel/types'
 
-/** Готовые форматы выгрузки. Объект, а не функция-фабрика: фабрики баррели — плагины. */
+/** Ready-made export formats. An object, not a factory function: the barrel's factories are plugins. */
 export const exportFormats: {
   csv: typeof csvFormat
   xlsx: typeof xlsxFormat

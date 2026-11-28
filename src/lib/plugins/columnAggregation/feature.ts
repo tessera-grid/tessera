@@ -13,20 +13,20 @@ import {
 import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
 import type { DataTypeName } from '../../core/dataTypes'
 
-/** Колонка → имя функции; `null` — «Без сводки»; нет ключа — функция колонки. */
+/** Column → function name; `null` — "No summary"; no key — the column's own function. */
 export type ColumnAggregationsState = Record<string, string | null>
 
-/** Своя функция сводки: определение TanStack и подпись приложения (ADR 0230, §2). */
+/** A custom summary function: a TanStack definition and the application's label (ADR 0230, §2). */
 export interface ColumnAggregationFunction {
-  /** Значение по строкам группы или всей таблицы. */
+  /** Value over the rows of a group or the whole table. */
   aggregate: (context: {
     rows: readonly { getValue: (columnId: string) => unknown }[]
     getValue: (row: never) => unknown
     columnId: string
   }) => unknown
-  /** Подпись в меню, у итога и в «Настройках вида» — текст приложения. */
+  /** Label in the menu, at the total and in "View settings" — the application's text. */
   label: string
-  /** Типы колонок, в чей список функция входит сама; без них — только где её назвали. */
+  /** Column types whose list includes the function automatically; without them — only where it's named. */
   dataTypes?: readonly DataTypeName[]
 }
 
@@ -46,7 +46,7 @@ interface ColumnAggregationTableAPI {
 }
 
 export interface ColumnAggregationColumnDef {
-  /** Функции, которые пользователь выбирает в сводке колонки; главнее списка типа (SU3). */
+  /** Functions the user chooses from in the column summary; take precedence over the type's list (SU3). */
   aggregationFns?: readonly string[]
 }
 
@@ -82,7 +82,7 @@ declare module '@tanstack/react-table' {
 
 declare module '../../core/dataTypes' {
   interface DataTypeFields<TData> {
-    /** Функции сводки колонок типа (ADR 0230, §2). */
+    /** Summary functions for columns of the type (ADR 0230, §2). */
     aggregationFns?: readonly string[]
   }
 }

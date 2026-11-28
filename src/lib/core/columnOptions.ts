@@ -1,9 +1,8 @@
 /**
- * Варианты значений колонки (ADR 0048, §1): `options` и `getOptionLabel` в описании
- * колонки. Подпись значения ищется по порядку: `options` → `getOptionLabel` → кэш
- * вариантов, загруженных фильтром справочника → само значение строкой. Общая для
- * отрисовки ячейки, быстрого поиска, экспорта и фильтра — плагины не импортируют друг
- * друга.
+ * Column value options (ADR 0048, §1): `options` and `getOptionLabel` in the column definition.
+ * A value's label is looked up in order: `options` → `getOptionLabel` → the cache of options
+ * loaded by a lookup filter → the value itself as a string. Shared by cell rendering, quick
+ * search, export and the filter, so plugins don't import each other.
  */
 
 export type OptionValue = string | number | boolean
@@ -11,27 +10,27 @@ export type OptionValue = string | number | boolean
 export interface ColumnOption {
   value: OptionValue
   label: string
-  /** Серверный режим: число строк для счётчика варианта в фильтре. */
+  /** Server mode: the row count shown next to an option in the filter. */
   count?: number
   /**
-   * Запись варианта колонки `object`: `value` — её ключ, запись сохраняет редактор (ADR 0175,
-   * ED8).
+   * Record of an option of an `object` column: `value` is its key, the editor saves the record
+   * (ADR 0175, ED8).
    */
   record?: unknown
 }
 
-/** Поиск вариантов справочника по строке (ADR 0048, §5; ADR 0172, DT13). */
+/** Searches lookup options by a string (ADR 0048, §5; ADR 0172, DT13). */
 export type LoadOptions = (
   search: string,
   context: { signal: AbortSignal },
 ) => Promise<ColumnOption[]>
 
 export interface ColumnOptionsDef {
-  /** Варианты значений колонки: подписи в ячейке, поиске, экспорте и фильтре. */
+  /** Column value options: labels in the cell, search, export and filter. */
   options?: ColumnOption[]
-  /** Подпись значения вне `options` (справочник): `undefined` — подписи нет. */
+  /** Label of a value not in `options` (a lookup): `undefined` means no label. */
   getOptionLabel?: (value: OptionValue) => string | undefined
-  /** Справочник: варианты фильтра по строке поиска; главнее — у типа колонки. */
+  /** Lookup: filter options for a search string; the column type's one takes precedence. */
   loadOptions?: LoadOptions
 }
 

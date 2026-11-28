@@ -19,21 +19,21 @@ export interface CheckboxProps {
   checked: boolean
   indeterminate?: boolean
   disabled?: boolean
-  /** Имя флажка; в режиме `readOnly` — значение для скринридера: «Да» или «Нет». */
+  /** Checkbox name; in `readOnly` mode — the value for screen readers: "Yes" or "No". */
   label?: string
-  /** Тултип, например сочетание клавиш; по умолчанию его нет. */
+  /** Tooltip, for example a keyboard shortcut; none by default. */
   tooltip?: string
   'aria-keyshortcuts'?: string
   /**
-   * Только значение (ADR 0172, DT18): тот же вид, но не нажимается и не в порядке фокуса;
-   * скринридеру — картинка с именем `label`.
+   * Value only (ADR 0172, DT18): the same look, but not pressable and not in the focus order;
+   * screen readers get an image named `label`.
    */
   readOnly?: boolean
-  /** `0` — флажок в порядке Tab и внутри композита Base UI (поповер тулбара). */
+  /** `0` — the checkbox is in the Tab order and inside a Base UI composite (a toolbar popover). */
   tabIndex?: number
-  /** Ждёт сохранения: дуга по контуру, `aria-busy`, нажатия игнорируются (ADR 0176, AC5). */
+  /** Waiting to be saved: an arc along the outline, `aria-busy`, presses are ignored (ADR 0176, AC5). */
   pending?: boolean
-  /** Значение не принято: рамка цветом ошибки, `aria-invalid`. */
+  /** The value wasn't accepted: an error-colored border, `aria-invalid`. */
   invalid?: boolean
   'aria-describedby'?: string
   className?: string

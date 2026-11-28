@@ -6,9 +6,9 @@ import { getDisplayColumns } from '../displayColumns'
 import { rowSourceOf } from '../rowSource'
 
 /**
- * Прямоугольник ячеек — той же формы, что диапазон выделения (ADR 0180, §6): углы строк
- * `id` или индексами, колонки по `id`. Заданы оба `id` углов — диапазон держится за
- * строки, иначе — за индексы.
+ * A rectangle of cells — the same shape as a selection range (ADR 0180, §6): row corners by
+ * `id` or index, columns by `id`. When both corner `id`s are set, the range follows the rows;
+ * otherwise it follows the indexes.
  */
 export interface RangeTarget {
   range: {

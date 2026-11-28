@@ -2,35 +2,35 @@
 import { defineLabels } from '../../core/localization'
 
 export interface ColumnSortingLabels {
-  /** Тултип «сортировать по возрастанию» */
+  /** Tooltip "sort ascending" */
   sortAscending: string
-  /** Тултип «сортировать по убыванию» */
+  /** Tooltip "sort descending" */
   sortDescending: string
-  /** Тултип «сбросить сортировку» */
+  /** Tooltip "clear sorting" */
   clearSort: string
-  /** Пункт меню колонки: следующий уровень мультисортировки (ADR 0231, §7) */
+  /** Column menu item: the next multi-sort level (ADR 0231, §7) */
   addToSorting: string
   /**
-   * Доступное имя приоритета столбца в мультисортировке (`position` из `total`,
-   * 1-based). Уходит в `aria-label` кнопки — числовой бейдж приоритета скринридер
-   * не читает, поэтому порядок сортировки проговаривается тут.
+   * Accessible name of a column's priority in multi-sort (`position` of `total`, 1-based). It
+   * goes into the button's `aria-label` — screen readers don't read the numeric priority badge,
+   * so the sort order is spoken here.
    */
   sortPriority: (position: number, total: number) => string
-  /** Действие: сортировка колонки */
+  /** Action: sort a column */
   actionSort: string
-  /** Вид преобразования в перечне меню «Колонки» (ADR 0204) */
+  /** Transform kind in the list of the "Columns" menu (ADR 0204) */
   transformName: string
-  /** Сортировка скрытой колонки по возрастанию — в доступном имени её пункта */
+  /** Ascending sort of a hidden column — in the accessible name of its item */
   transformAscending: string
-  /** То же по убыванию */
+  /** The same, descending */
   transformDescending: string
-  /** Приоритет сортировки скрытой колонки (`position` из `total`) */
+  /** Sort priority of a hidden column (`position` of `total`) */
   transformPriority: (position: number, total: number) => string
-  /** Кнопка-сводка сортировки в тулбаре и заголовок её поповера (ADR 0204, §5) */
+  /** Sort summary button in the toolbar and its popover title (ADR 0204, §5) */
   sorting: string
-  /** Снять уровень сортировки колонки в сводке */
+  /** Remove a column's sort level in the summary */
   removeSort: (column: string) => string
-  /** Сбросить всю сортировку в сводке */
+  /** Clear all sorting in the summary */
   resetSorting: string
 }
 

@@ -2,9 +2,9 @@
 import { defineLabels } from '../../core/localization'
 
 export interface BackToTopLabels {
-  /** Кнопка «наверх» в нижней панели (ADR 0082): тултип и доступное имя */
+  /** "Back to top" button in the status bar (ADR 0082): tooltip and accessible name */
   backToTop: string
-  /** Кнопка «к первой колонке» в нижней панели (ADR 0105) */
+  /** "To first column" button in the status bar (ADR 0105) */
   backToStart: string
 }
 

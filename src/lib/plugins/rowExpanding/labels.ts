@@ -2,23 +2,23 @@
 import { defineLabels } from '../../core/localization'
 
 export interface RowExpandingLabels {
-  /** Имя и тултип кнопки раскрытия у свёрнутой строки (ADR 0015, RE13) */
+  /** Name and tooltip of the expand button on a collapsed row (ADR 0015, RE13) */
   expandRow: string
-  /** Имя и тултип кнопки раскрытия у раскрытой строки */
+  /** Name and tooltip of the expand button on an expanded row */
   collapseRow: string
-  /** Имя и тултип кнопки в шапке колонки раскрытия, если есть свёрнутые строки (ADR 0160) */
+  /** Name and tooltip of the button in the expand column header when some rows are collapsed (ADR 0160) */
   expandAll: string
-  /** Имя и тултип той же кнопки, когда раскрыто всё */
+  /** Name and tooltip of the same button when everything is expanded */
   collapseAll: string
-  /** Текст отказа загрузки детей строки, если сервер не прислал свой (ADR 0054) */
+  /** Failure text of loading a row's children when the server sent none (ADR 0054) */
   loadChildrenFailed: string
-  /** Объявление отказа раскрытия строки */
+  /** Announcement that expanding a row failed */
   announceExpandFailed: (error: string) => string
-  /** Объявление асинхронного прихода детей строки (`0` — пустой ответ, ADR 0056) */
+  /** Announcement of a row's children arriving asynchronously (`0` — an empty answer, ADR 0056) */
   announceChildrenLoaded: (count: number) => string
-  /** Скрытые подписи заголовков служебных колонок (`label` записи `ServiceColumn`) */
+  /** Hidden header labels of service columns (`label` of a `ServiceColumn` entry) */
   expandColumn: string
-  /** Действие: раскрыть или свернуть строку */
+  /** Action: expand or collapse a row */
   actionToggleRow: string
 }
 

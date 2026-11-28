@@ -18,18 +18,18 @@ export interface ToolbarButtonProps
     Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>,
     DerivedButtonProps,
     ActiveProps {
-  /** Доступное имя кнопки. */
+  /** Accessible name of the button. */
   label: string
-  /** Тултип кнопки; по умолчанию — её доступное имя. */
+  /** Button tooltip; its accessible name by default. */
   tooltip?: string
   icon: ReactNode
-  /** Триггер всплывающего окна (напр. `<Popover.Trigger />`) — рендер-проп Base UI. */
+  /** Trigger of a popup (for example `<Popover.Trigger />`) — a Base UI render prop. */
   render?: ReactElement
 }
 
 /**
- * Кнопка верхнего тулбара (ADR 0035): кнопка-иконка кита (ADR 0098) с тултипом и
- * roving-фокусом Base UI Toolbar. Живёт только внутри тулбара грида.
+ * A top toolbar button (ADR 0035): the kit's icon button (ADR 0098) with a tooltip and Base UI
+ * Toolbar roving focus. Lives only inside the grid toolbar.
  */
 export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
   (

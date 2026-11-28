@@ -1,4 +1,4 @@
-/** Положение строки футера (ADR 0118). */
+/** Footer row position (ADR 0118). */
 export type FooterPosition = 'pinned' | 'inline'
 
 /** Положение футера таблицы: без опции — у низа области прокрутки. */

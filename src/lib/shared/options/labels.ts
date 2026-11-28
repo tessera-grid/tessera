@@ -2,7 +2,7 @@
 import { defineLabels } from '../../core/localization'
 
 export interface OptionsLabels {
-  /** Кнопка очистки быстрого поиска */
+  /** Button that clears the quick search */
   clearSearch: string
 }
 

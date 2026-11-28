@@ -1,11 +1,11 @@
-/** Умолчания колонки (ADR 0077): переданное приложением дополняет размеры по умолчанию. */
+/** Column defaults (ADR 0077): what the application passes extends the default sizes. */
 export interface DefaultColumnSizing {
   size?: number
   minSize?: number
   maxSize?: number
-  /** Вес флекс-колонки (ADR 0216): `1` — колонки делят ширину таблицы. */
+  /** Flex column weight (ADR 0216): with `1`, columns share the table width. */
   flex?: number
-  /** Строки дерева, которые складывает агрегат колонки (ADR 0229): `'all'` — все узлы. */
+  /** Tree rows the column aggregate adds up (ADR 0229): `'all'` means all nodes. */
   aggregationScope?: 'top' | 'all'
 }
 

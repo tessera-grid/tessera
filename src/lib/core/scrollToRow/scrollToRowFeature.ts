@@ -25,17 +25,17 @@ import { rowsOf } from '../rowEngine/rows'
 export type ScrollAlign = 'auto' | 'start' | 'center' | 'end'
 
 export interface ScrollToRowOptions {
-  /** Куда поставить строку; `auto` не двигает видимую. По умолчанию `auto`. */
+  /** Where to place the row; `auto` doesn't move a visible one. `auto` by default. */
   align?: ScrollAlign
-  /** `instant` — прыжок за кадр (по умолчанию), `smooth` — плавно. */
+  /** `instant` — jump within a frame (default), `smooth` — animated. */
   behavior?: 'instant' | 'smooth'
-  /** Ещё и горизонталь к колонке. */
+  /** Also scroll horizontally to the column. */
   columnId?: string
-  /** Раскрыть свёрнутых предков строки. */
+  /** Expand the row's collapsed ancestors. */
   expandParents?: boolean
   /**
-   * Индекс строки в списке, если она ещё не загружена (серверная модель строк, ADR 0138,
-   * §12): прокрутка к нему, затем строка с этим id должна там оказаться.
+   * Index of the row in the list if it isn't loaded yet (server row model, ADR 0138, §12):
+   * scrolls to it, then the row with this id must end up there.
    */
   index?: number
 }

@@ -21,19 +21,20 @@ import type { ActionRef } from '../actions'
 
 export interface TrackCellActionOptions {
   /**
-   * Кто показывает ожидание: `'cell'` (по умолчанию) — волна на ячейках цели, для события
-   * без контрола; `'control'` — контрол в ячейке сам, ячейка несёт только `aria-busy`.
+   * Who shows the pending state: `'cell'` (default) — a wave on the target cells, for an event
+   * without a control; `'control'` — the control in the cell shows it, the cell only carries
+   * `aria-busy`.
    */
   indicator?: 'cell' | 'control'
-  /** Действие справочника — имя записи отказа и объявления итога (ADR 0182, §5). */
+  /** Catalog action — the name of the failure entry and the outcome announcement (ADR 0182, §5). */
   action?: ActionRef
-  /** Имя действия от приложения — его переводом; без `action` и `label` — «Сохранение». */
+  /** Action name from the application — already translated; without `action` and `label` — "Saving". */
   label?: string
-  /** Вспышка `accepted` на цели после успеха. */
+  /** An `accepted` flash on the target after success. */
   flashOnSuccess?: boolean
   /**
-   * Повтор действия после отказа: с ним в поповере треугольника ячейки — «Повторить»
-   * (ADR 0177, OB15). Без него человек повторяет тем же контролом или жестом.
+   * Retries the action after a failure: with it, the cell triangle's popover shows "Retry"
+   * (ADR 0177, OB15). Without it, the user retries with the same control or gesture.
    */
   retry?: () => unknown
 }
@@ -115,7 +116,7 @@ export const trackCellAction = <T>(
   return result
 }
 
-/** Ожидание ячейки для её контрола: `'wave'`, `'busy'` или нет (AC4). */
+/** The cell's pending state for its control: `'wave'`, `'busy'` or none (AC4). */
 export const useCellPending = (
   table: unknown,
   rowId: string,

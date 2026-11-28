@@ -2,7 +2,7 @@
 import { defineLabels } from '../../core/localization'
 
 export interface RowActionsLabels {
-  /** Скрытые подписи заголовков служебных колонок (`label` записи `ServiceColumn`) */
+  /** Hidden header labels of service columns (`label` of a `ServiceColumn` entry) */
   rowActionsColumn: string
 }
 

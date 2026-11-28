@@ -2,31 +2,31 @@
 import { defineLabels } from '../../core/localization'
 
 export interface ColumnAggregationLabels {
-  /** Пункт меню колонки, раздел «Настроек вида» и действие */
+  /** Column menu item, "View settings" section and action */
   summary: string
-  /** Пункт «без функции»: итог и значения групп пусты */
+  /** The "no function" item: the total and group values are empty */
   noSummary: string
-  /** Сумма */
+  /** Sum */
   sum: string
-  /** Среднее */
+  /** Average */
   mean: string
-  /** Медиана */
+  /** Median */
   median: string
-  /** Минимум */
+  /** Minimum */
   min: string
-  /** Максимум */
+  /** Maximum */
   max: string
-  /** Количество строк */
+  /** Row count */
   count: string
-  /** Число разных значений */
+  /** Number of distinct values */
   uniqueCount: string
-  /** Диапазон «от — до» */
+  /** "From — to" range */
   extent: string
-  /** Список разных значений */
+  /** List of distinct values */
   unique: string
-  /** Снять сводку колонки в «Настройках вида» */
+  /** Remove a column's summary in "View settings" */
   removeSummary: (column: string) => string
-  /** Сбросить сводку всех колонок в «Настройках вида» */
+  /** Reset the summary of all columns in "View settings" */
   resetSummary: string
 }
 

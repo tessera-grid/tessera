@@ -14,13 +14,13 @@ export const DEFAULT_MAX_LINES = 10
 export const DEFAULT_HEADER_MAX_LINES = 3
 
 export interface TextWrapOptions {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
-  /** Оценка высоты незамеренной строки, px; по умолчанию — высота строки. */
+  /** Estimated height of an unmeasured row, px; the row height by default. */
   estimatedRowHeight?: number
-  /** Предел строк ячейки `autoHeight`, дальше `…` с тултипом; по умолчанию 10. */
+  /** Line limit of an `autoHeight` cell, then `…` with a tooltip; 10 by default. */
   maxLines?: number
-  /** Предел строк заголовка `autoHeaderHeight`, дальше `…` с тултипом; по умолчанию 3. */
+  /** Line limit of an `autoHeaderHeight` header, then `…` with a tooltip; 3 by default. */
   headerMaxLines?: number
 }
 
@@ -38,5 +38,5 @@ const textWrapEntry = definePlugin<TextWrapOptions>()({
         },
 })
 
-/** Атрибуты ячеек, проба замера и хук корня — вкладом в тело (ADR 0170, §3). */
+/** Cell attributes, the measurement probe and the root hook — as a body contribution (ADR 0170, §3). */
 export const textWrap = withBody(textWrapEntry, textWrapBody)

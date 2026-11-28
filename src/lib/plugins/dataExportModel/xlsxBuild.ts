@@ -17,12 +17,12 @@ import {
 const EXCEL_DIGITS = 15
 
 export interface BuildXlsxOptions {
-  /** Пояс стенного времени дат; по умолчанию — пояс данных выгрузки, иначе браузера. */
+  /** Time zone for wall-clock date times; by default the export data's zone, otherwise the browser's. */
   timeZone?: string
   sheetName?: string
-  /** Строк на листе вместе с шапкой (предел Excel — 1 048 576). */
+  /** Rows per sheet including the header (Excel's limit is 1,048,576). */
   maxRowsPerSheet?: number
-  /** `false` — части без сжатия. */
+  /** `false` — parts without compression. */
   compress?: boolean
 }
 

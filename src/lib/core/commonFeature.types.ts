@@ -82,116 +82,116 @@ export type SlotActionMenuV9 = SlotActionMenu
 export type LogLevel = 'silent' | 'error' | 'warn' | 'info' | 'debug'
 
 // --- Опции фичи --------------------------------------------------------------
-/** Опции ядра, которые задаёт приложение в `useCreateTable` (ADR 0164). */
+/** Core options the application sets in `useCreateTable` (ADR 0164). */
 export interface CoreOptions {
   /**
-   * Где выполняются операции над строками (ADR 0169): `'client'`, `'server'` или по
-   * операциям `sorting`, `filtering`, `search`, `pagination`, `export`; не заданная
-   * операция — на клиенте. Значение берётся при монтировании.
+   * Where row operations run (ADR 0169): `'client'`, `'server'`, or per operation: `sorting`,
+   * `filtering`, `search`, `pagination`, `export`; an operation not set runs on the client.
+   * Read once at mount.
    */
   dataMode?: DataMode
   /**
-   * Строк на сервере для текущего запроса (ADR 0169, §4): после фильтров и поиска, `-1` —
-   * неизвестно. Пейджер, серверная модель строк, лента, `aria-rowcount` и «показано N из M»
-   * читают его через ядро (`rowCountOf`).
+   * Rows on the server for the current query (ADR 0169, §4), after filters and search; `-1`
+   * means unknown. The pager, server row model, infinite scroll, `aria-rowcount` and "showing N
+   * of M" read it through the core (`rowCountOf`).
    */
   rowCount?: number
-  /** Строк на сервере до фильтров и поиска — для «показано N из M». */
+  /** Rows on the server before filters and search — for "showing N of M". */
   totalRowCount?: number
-  /** Язык форм слова, чисел и списков в подписях (BCP 47), по умолчанию `en-US` (ADR 0169, §5). */
+  /** Language of word forms, numbers and lists in labels (BCP 47), `en-US` by default (ADR 0169, §5). */
   locale?: string
   /**
-   * Пределы одной операции записи в ячейках (ADR 0223): больше `confirm` — вопрос, больше `max`
-   * — отказ; по умолчанию 5 000 и 15 000, `false` — без пределов.
+   * Limits of one cell write operation (ADR 0223): above `confirm` the user is asked, above
+   * `max` it is refused; 5,000 and 15,000 by default, `false` means no limits.
    */
   writeLimits?: WriteLimits | false
-  /** Свои типы данных колонок и замена полей встроенных (ADR 0172, §1). */
+  /** Custom column data types and overrides of built-in type fields (ADR 0172, §1). */
   dataTypes?: DataTypeRegistry
   /**
-   * Пояс дат (IANA или `'UTC'`): сутки, «сегодня», пресеты и стенное время фильтра дат и
-   * выгрузки; по умолчанию — пояс браузера (ADR 0169, §5).
+   * Time zone for dates (IANA or `'UTC'`): days, "today", presets and wall-clock time of the
+   * date filter and export; the browser's zone by default (ADR 0169, §5).
    */
   timeZone?: string
   /**
-   * Язык календарей дат — месяцы, дни недели, первый день недели: объект `Locale`
-   * `date-fns`; по умолчанию `en-US`. Его читают фильтр дат и редактор даты (ADR 0175).
+   * Language of date calendars — months, weekdays, first day of the week: a `date-fns` `Locale`
+   * object; `en-US` by default. Read by the date filter and the date editor (ADR 0175).
    */
   dateLocale?: DayPickerLocale
   /**
-   * Загрузка данных сейчас (ADR 0106): `'initial'` — скелет первой загрузки (ADR 0060),
-   * `'refresh'` — свечение обновления (ADR 0094), `false` — нет.
+   * Data loading state (ADR 0106): `'initial'` shows the first-load skeleton (ADR 0060),
+   * `'refresh'` shows the refresh glow (ADR 0094), `false` means not loading.
    */
   loading?: 'initial' | 'refresh' | false
   enableFooter?: boolean
   /**
-   * Положение строки футера (ADR 0118): `'pinned'` — всегда у низа области прокрутки,
-   * `'inline'` — сразу за последней строкой, прокручивается вместе с телом.
+   * Footer row position (ADR 0118): `'pinned'` stays at the bottom of the scroll area,
+   * `'inline'` follows the last row and scrolls with the body.
    */
   footerPosition?: FooterPosition
-  /** Верхний тулбар: без флага — по наличию кнопок плагинов, `true` — всегда, `false` — никогда (ADR 0046). */
+  /** Top toolbar: unset — shown when plugins add buttons, `true` — always, `false` — never (ADR 0046). */
   enableToolbar?: boolean
-  /** Место кнопки «Настройки вида» в тулбаре; `false` — кнопки нет (ADR 0215, §2). */
+  /** Position of the "View settings" button in the toolbar; `false` hides it (ADR 0215, §2). */
   viewSettingsToolbar?: ToolbarPlacement | false
-  /** Нижняя панель: без флага — по наличию её слотов, `true` — всегда, `false` — никогда (ADR 0046). */
+  /** Status bar: unset — shown when it has slots, `true` — always, `false` — never (ADR 0046). */
   enableStatusBar?: boolean
-  /** `false` — ядро не объявляет изменения скринридеру (ADR 0032, W9). */
+  /** `false` — the core doesn't announce changes to screen readers (ADR 0032, W9). */
   enableAnnouncements?: boolean
   /**
-   * Клавиатурная навигация по ячейкам (ADR 0021, ADR 0170): роль `grid` (`treegrid`), roving
-   * `tabindex` и клавиши; без флага — `role="table"`.
+   * Keyboard navigation between cells (ADR 0021, ADR 0170): the `grid` (`treegrid`) role, roving
+   * `tabindex` and keys; without it the grid is `role="table"`.
    */
   enableKeyboardNavigation?: boolean
   /**
-   * Платформа клавиатуры (ADR 0232, KX11): `apple` — основной модификатор `Cmd`, `other` — `Ctrl`;
-   * `auto` (по умолчанию) — по браузеру.
+   * Keyboard platform (ADR 0232, KX11): `apple` uses `Cmd` as the primary modifier, `other` uses
+   * `Ctrl`; `auto` (default) detects it from the browser.
    */
   keyboardPlatform?: KeyboardPlatformOption
-  /** Активная ячейка у приложения — индексы отображения (KN31, ADR 0171, §4). */
+  /** Active cell controlled by the application — display indexes (KN31, ADR 0171, §4). */
   activeCell?: ActiveCell
-  /** Активная ячейка сменилась — стрелками, кликом или Tab. */
+  /** The active cell changed — by arrows, click or Tab. */
   onActiveCellChange?: (next: ActiveCell) => void
-  /** Активная ячейка при монтировании, если её не ведёт приложение (EF10). */
+  /** Active cell at mount, when the application doesn't control it (EF10). */
   initialActiveCell?: ActiveCell
-  /** Черновики у приложения (ADR 0178, §1): введённое, но не применённое. */
+  /** Drafts controlled by the application (ADR 0178, §1): entered but not applied. */
   drafts?: readonly Draft[]
-  /** Черновики сменились — изнутри грида или API таблицы. */
+  /** Drafts changed — from inside the grid or through the table API. */
   onDraftsChange?: (next: readonly Draft[]) => void
-  /** Черновики при монтировании, если их не ведёт приложение. */
+  /** Drafts at mount, when the application doesn't control them. */
   initialDrafts?: readonly Draft[]
-  /** `false` — без тултипа у обрезанного текста ячеек (ADR 0075). */
+  /** `false` — no tooltip on truncated cell text (ADR 0075). */
   enableOverflowTooltip?: boolean
-  /** `false` — смены модели строк мгновенны, без движения (ADR 0107). */
+  /** `false` — row model changes are instant, without motion (ADR 0107). */
   enableRowAnimation?: boolean
-  /** `false` — смены порядка колонок мгновенны, без движения (ADR 0115). */
+  /** `false` — column order changes are instant, without motion (ADR 0115). */
   enableColumnAnimation?: boolean
   /**
-   * `false` — первый рендер и смена всего окна одним проходом, без переходов React: для
-   * приложения с `<ViewTransition>` над гридом (ADR 0203).
+   * `false` — the first render and a whole-window change happen in one pass, without React
+   * transitions: for an application with `<ViewTransition>` above the grid (ADR 0203).
    */
   enableIncrementalRender?: boolean
   skeletonOptions?: SkeletonOptions
-  /** Задержка и минимум показа обновления при `loading: 'refresh'` (ADR 0094). */
+  /** Delay and minimum display time of the refresh state with `loading: 'refresh'` (ADR 0094). */
   refreshOptions?: RefreshOptions
   /**
-   * Отказ загрузки данных (ADR 0096): `Error` или строка; `null` — ошибки нет. С данными —
-   * красный свет под шапкой и плашка, без данных — заглушка ошибки.
+   * Data load failure (ADR 0096): an `Error` or a string; `null` means no error. With data —
+   * a red light under the header and an alert; without data — the error stub.
    */
   loadError?: unknown
-  /** Повтор загрузки из плашки и заглушки; промис держит кнопку в ожидании. */
+  /** Retries loading from the alert and the stub; a promise keeps the button pending. */
   onRetry?: () => unknown
-  /** Канал действий грида: что сделал пользователь, приложение или грид (ADR 0125). */
+  /** The grid's debug-action channel: what the user, the application or the grid did (ADR 0125). */
   onDebugAction?: OnDebugAction
-  /** Новый отказ в реестре отказов (ADR 0177, §6) — например, для своего трекера ошибок. */
+  /** A new failure in the failure registry (ADR 0177, §6) — for example, for your error tracker. */
   onFailure?: (failure: Failure) => void
   /**
-   * Следующий `data` клиентской транзакции `table.applyRowTransaction` (ADR 0194, §4):
-   * приложение кладёт его в `data`. Без обработчика транзакция в клиентском режиме не
-   * применяется.
+   * The next `data` of a client transaction `table.applyRowTransaction` (ADR 0194, §4): the
+   * application puts it into `data`. Without a handler, a transaction is not applied in client
+   * mode.
    */
   onDataChange?: (data: any[], transaction: RowTransaction) => void
-  /** Высота строк тела, футера и скелета, px; по умолчанию 50, не ниже 40 (ADR 0077). */
+  /** Height of body, footer and skeleton rows, px; 50 by default, at least 40 (ADR 0077). */
   rowHeight?: number
-  /** Высота каждой строки шапки, px; по умолчанию — как `rowHeight`, не ниже 36. */
+  /** Height of each header row, px; same as `rowHeight` by default, at least 36. */
   headerHeight?: number
 }
 

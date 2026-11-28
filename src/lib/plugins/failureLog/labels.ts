@@ -2,40 +2,40 @@
 import { defineLabels } from '../../core/localization'
 
 export interface FailureLogLabels {
-  /** Журнал ошибок: заголовок поповера (ADR 0177, §7). */
+  /** Failure log: the popover title (ADR 0177, §7). */
   failureLog: string
-  /** Пустой журнал ошибок. */
+  /** Empty failure log. */
   failureLogEmpty: string
-  /** Пояснение пустого журнала ошибок. */
+  /** Explanation of an empty failure log. */
   failureLogEmptyDescription: string
-  /** Кнопка журнала ошибок с числом записей. */
+  /** Failure log button with the number of entries. */
   failureLogButton: (count: number) => string
-  /** Закрыть все записи журнала, когда ни за одной нет правки (ADR 0227, §6). */
+  /** Dismiss all log entries when none of them has an edit (ADR 0227, §6). */
   failureClearAll: string
-  /** Сбросить правки всех записей и закрыть прочие (ADR 0227, §6). */
+  /** Discard the edits of all entries and dismiss the rest (ADR 0227, §6). */
   failureDiscardAll: string
-  /** Вопрос перед сбрасыванием всех правок: их число. */
+  /** The question before discarding all edits: their number. */
   failureDiscardAllQuestion: (count: number) => string
-  /** Кнопки вопроса: сбросить и оставить правки. */
+  /** Question buttons: discard and keep the edits. */
   failureDiscardAllConfirm: string
   failureDiscardAllDecline: string
-  /** Группа журнала: сбросить её правки (ADR 0227, §4). */
+  /** Log group: discard its edits (ADR 0227, §4). */
   failureDiscardGroup: string
-  /** Группа журнала: закрыть её записи без правок. */
+  /** Log group: dismiss its entries without edits. */
   failureCloseGroup: string
-  /** Число целей группы: ячейки, строки, прочие объекты. */
+  /** Number of the group's targets: cells, rows, other objects. */
   failureGroupCells: (count: number) => string
   failureGroupRows: (count: number) => string
   failureGroupItems: (count: number) => string
-  /** Запись журнала: прокрутить к цели. */
+  /** Log entry: scroll to the target. */
   failureShow: string
-  /** Запись журнала: снять запись. */
+  /** Log entry: dismiss it. */
   failureClose: string
-  /** Прокрутка к цели записи не удалась (ADR 0227, §7). */
+  /** Scrolling to the entry's target failed (ADR 0227, §7). */
   targetNotFound: string
-  /** Объявление новой записи журнала: число записей. */
+  /** Announcement of a new log entry: the number of entries. */
   announceFailureLogged: (count: number) => string
-  /** Подсказка точки записи (ADR 0224). */
+  /** Hint of an entry's dot (ADR 0224). */
   markHint: string
 }
 

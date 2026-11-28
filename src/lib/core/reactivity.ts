@@ -44,8 +44,8 @@ type SliceSource<T> = {
 }
 
 /**
- * Подписка на ОДИН срез состояния (`table.atoms[key]`). Компонент ре-рендерится
- * только при изменении этого среза.
+ * Subscribes to ONE state slice (`table.atoms[key]`). The component re-renders only when this
+ * slice changes.
  */
 export const useSlice = <
   TFeatures extends TableFeatures,
@@ -97,8 +97,8 @@ export const useSliceProjection = <TSelected>(
 }
 
 /**
- * Подписка на ПРОЕКЦИЮ из общего store с shallow-сравнением. Для компонентов,
- * которым нужно несколько срезов сразу.
+ * Subscribes to a PROJECTION of the shared store with shallow comparison. For components that
+ * need several slices at once.
  */
 export const useTableState = <
   TFeatures extends TableFeatures,

@@ -11,7 +11,7 @@ import type {
   OnChangeFn,
 } from '@tanstack/react-table'
 
-/** Срезы колонок, которые приложение задаёт ядру. */
+/** Column slices the application passes to the core. */
 export interface CoreTableState {
   columnVisibility?: ColumnVisibilityState
   columnOrder?: ColumnOrderState
@@ -19,7 +19,7 @@ export interface CoreTableState {
   columnSizing?: ColumnSizingState
 }
 
-/** Колбэки срезов колонок. */
+/** Callbacks for column slices. */
 export interface CoreTableHandlers {
   onColumnVisibilityChange?: OnChangeFn<ColumnVisibilityState>
   onColumnOrderChange?: OnChangeFn<ColumnOrderState>

@@ -52,35 +52,35 @@ export interface RowExpandingOptions extends Omit<
   RowExpandingModelOptions,
   'enabled'
 > {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
   /**
-   * Сколько уровней дерева раскрываемы от корня (ЧИСЛО уровней, не индекс): строка
-   * раскрываема, пока `row.depth < maxDepth`. По умолчанию 1 — тоггл только у корней.
+   * How many tree levels are expandable from the root (a NUMBER of levels, not an index): a row is
+   * expandable while `row.depth < maxDepth`. 1 by default — only roots have a toggle.
    */
   maxDepth?: number
   /**
-   * `'auto'` (по умолчанию) — колонка видна, только если в данных есть раскрываемые
-   * строки; `'always'` — всегда (серверный режим, ADR 0050).
+   * `'auto'` (default) — the column is shown only when the data has expandable rows; `'always'` —
+   * always (server mode, ADR 0050).
    */
   column?: ServiceColumnMode
   /**
-   * Кнопка «Раскрыть всё / Свернуть всё» в шапке колонки раскрытия (ADR 0160, §2); `false` —
-   * раскрытие только по строкам. По умолчанию есть.
+   * The "Expand all / Collapse all" button in the expand column header (ADR 0160, §2); `false` —
+   * expanding only per row. Shown by default.
    */
   expandAll?: boolean
   /**
-   * Строка ветки дерева держится под шапкой, пока видны её дети; вложенные — стопкой
-   * (ADR 0160, §3). По умолчанию выключено.
+   * A tree branch row stays under the header while its children are visible; nested ones stack
+   * (ADR 0160, §3). Off by default.
    */
   stickyRows?: boolean
-  /** Бизнес-колбэк раскрытия строки (аргумент фабрики); читается живо. */
+  /** Row expand business callback (a factory argument); read live. */
   onExpandRow?: RowExpandingHooks['onExpandRow']
-  /** У строки есть дети, которых нет в `subRows`, — их грузит `loadChildren` (ADR 0054). */
+  /** The row has children that aren't in `subRows` — `loadChildren` loads them (ADR 0054). */
   hasChildren?: RowExpandingHooks['hasChildren']
   /**
-   * Загрузка детей ленивой строки на каждое раскрытие: массив — сразу, промис —
-   * после ожидания. Грид держит последний ответ; кэш — на приложении (ADR 0054).
+   * Loads a lazy row's children on every expand: an array — right away, a promise — after waiting.
+   * The grid keeps the last answer; caching is up to the application (ADR 0054).
    */
   loadChildren?: RowExpandingHooks['loadChildren']
 }

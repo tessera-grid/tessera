@@ -18,14 +18,14 @@ import { phaseLayerOf } from './useErrorFlash'
 import styles from '../ringStates/ringStates.module.css'
 
 export interface ButtonStatesProps {
-  /** Ждёт асинхронного действия: дуга по контуру, `aria-busy`, нажатия игнорируются. */
+  /** Waiting for an async action: an arc along the outline, `aria-busy`, presses are ignored. */
   pending?: boolean
   /**
-   * Отмена ждущего действия (ADR 0153): через `--tsr-comp-cancel-arm-delay` после начала
-   * ожидания кнопка показывает «стоп» при наведении и фокусе, нажатие отменяет.
+   * Cancels the pending action (ADR 0153): `--tsr-comp-cancel-arm-delay` after waiting starts, the
+   * button shows "stop" on hover and focus, and pressing cancels.
    */
   onCancel?: (event: MouseEvent<HTMLButtonElement>) => void
-  /** Имя и тултип кнопки со «стопом» — «Отменить: …». */
+  /** Name and tooltip of the button with "stop" — "Cancel: …". */
   cancelLabel?: string
 }
 

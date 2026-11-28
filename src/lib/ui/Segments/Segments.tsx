@@ -18,7 +18,7 @@ export interface SegmentsProps<V extends string = string> {
   value: V
   options: SegmentOption<V>[]
   onValueChange: (value: V) => void
-  /** Доступное имя группы: `aria-label` или id подписи в `aria-labelledby`. */
+  /** Accessible name of the group: `aria-label` or the label's id in `aria-labelledby`. */
   'aria-label'?: string
   'aria-labelledby'?: string
   disabled?: boolean
@@ -27,9 +27,9 @@ export interface SegmentsProps<V extends string = string> {
 }
 
 /**
- * Сегменты (ADR 0074): выбор одного из немногих коротких вариантов — дорожка с
- * приподнятой рамкой выбранного, которая переезжает к новому выбору. Семантика `radiogroup` Base UI: стрелки переводят
- * выбор, Tab попадает на выбранный.
+ * Segments (ADR 0074): choosing one of a few short options — a track with a raised frame around
+ * the selected one that moves to the new choice. Base UI `radiogroup` semantics: arrows move the
+ * selection, Tab lands on the selected one.
  */
 export const Segments = <V extends string>({
   value,

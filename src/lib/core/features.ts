@@ -80,74 +80,73 @@ import {
 } from './pluginDiagnostics'
 
 /**
- * Запись плагина, которую задаёт автор (ADR 0164, §3): фрагмент карты фич, табличные
- * опции и декларативные слоты, действия и меню. `features` идёт в `tableFeatures()`;
- * остальное сворачивается в опции таблицы (`foldEntries`).
+ * A plugin entry written by an author (ADR 0164, §3): a fragment of the feature map, table
+ * options, and declarative slots, actions and menus. `features` goes into `tableFeatures()`;
+ * the rest is folded into table options (`foldEntries`).
  */
 export interface TablePlugin<TFeatures extends object = object> {
   id: string
   /**
-   * Фрагмент для `tableFeatures({...})`, напр. `{ rowSortingFeature, sortedRowModel,
-   * sortFns }`. Опционален: запись может нести только декларативные действия/меню
-   * (slotActions/actionMenu) без собственной фичи.
+   * Fragment for `tableFeatures({...})`, for example `{ rowSortingFeature, sortedRowModel,
+   * sortFns }`. Optional: an entry may carry only declarative actions or menus
+   * (slotActions/actionMenu) without its own feature.
    */
   features?: TFeatures
-  /** Наличие = включено. */
+  /** Presence means enabled. */
   enabled?: boolean
-  /** Табличные опции фичи (напр. `{ enableSorting: true }`) — вливаются в опции useTable. */
+  /** Table options of the feature (for example `{ enableSorting: true }`) — merged into `useTable` options. */
   options?: Record<string, unknown>
-  /** Модель, которую несёт плагин интерфейса; ядро раскрывает её в свою запись (ADR 0120, §3). */
+  /** The model an interface plugin carries; the core expands it into its own entry (ADR 0120, §3). */
   model?: TablePlugin
   /**
-   * Живой слайс бизнес-хуков плагина (колбэки/флаги), читается через
-   * `table.getHooks()`. В отличие от `options`/`slots`, НЕ мемоизируется по сигнатуре
-   * набора — сворачивается каждый рендер (`foldHooks`), чтобы колбэки оставались
-   * актуальными на момент вызова. Ключ верхнего уровня — scope плагина.
+   * Live slice of the plugin's business hooks (callbacks and flags), read through
+   * `table.getHooks()`. Unlike `options`/`slots`, it is NOT memoized by the set's signature —
+   * it is folded on every render (`foldHooks`) so callbacks stay current when called. The
+   * top-level key is the plugin scope.
    */
   hooks?: Record<string, unknown>
-  /** Декларативные слоты плагина. */
+  /** The plugin's declarative slots. */
   slots?: PluginSlot[]
-  /** Декларативные действия слота (кебаб/инлайн). */
+  /** Declarative slot actions (kebab or inline). */
   slotActions?: SlotAction[]
-  /** Заглушки пустой таблицы плагина — записи реестра (ADR 0123). */
+  /** The plugin's empty-table stubs — registry entries (ADR 0123). */
   stubs?: StubEntry[]
-  /** Виды черновиков плагина (ADR 0178, §1). */
+  /** The plugin's draft kinds (ADR 0178, §1). */
   draftKinds?: DraftKind[]
-  /** Наборы подписей плагина и общих модулей, которые он рисует (ADR 0182, §8). */
+  /** Label sets of the plugin and of the shared modules it renders (ADR 0182, §8). */
   labels?: readonly LabelSet[]
-  /** Действия плагина в справочнике: имя → подпись или ссылка (ADR 0182, §1). */
+  /** The plugin's actions in the catalog: name → label or a reference (ADR 0182, §1). */
   actions?: ActionLabels
-  /** Декларативные пункты контекстного меню (ADR 0030). */
+  /** Declarative context-menu items (ADR 0030). */
   contextMenuActions?: ContextMenuAction[]
-  /** Клавиатурные действия на ячейках (ADR 0021). */
+  /** Keyboard actions on cells (ADR 0021). */
   keyboardActions?: KeyboardAction[]
-  /** Что плагин делает с данными по колонке и как это снять (ADR 0204, §2). */
+  /** What the plugin does to the data per column and how to remove it (ADR 0204, §2). */
   columnTransforms?: ColumnTransform[]
-  /** Разделы «Настроек вида» (ADR 0215, §5). */
+  /** "View settings" sections (ADR 0215, §5). */
   viewSettingsSections?: ViewSettingsSection[]
-  /** Декларация плагина-меню: на какие слоты распространить кебаб. */
+  /** A menu plugin's declaration: which slots get the kebab menu. */
   actionMenu?: ActionMenuDeclaration
-  /** Причина инертности для `table.getPluginDiagnostics()` (ADR 0022). */
+  /** Inert reason for `table.getPluginDiagnostics()` (ADR 0022). */
   diagnose?: PluginDiagnose
-  /** Сервисная колонка плагина (напр. колонка раскрытия/выбора). */
+  /** The plugin's service column (for example, the expand or selection column). */
   column?: ServiceColumn
   /**
-   * Императивный сетап ПОСЛЕ создания таблицы (generic-escape): побочный
-   * эффект, невыразимый через фичу/опции (напр. rowActions пишет авто-слайс ширины
-   * через table.setColumnAutoSizing). Ядро выполняет setups активных записей в
-   * едином useEffect; может вернуть cleanup.
+   * Imperative setup AFTER the table is created (a generic escape hatch): a side effect that
+   * can't be expressed through a feature or options (for example, rowActions writes an
+   * auto-width slice through `table.setColumnAutoSizing`). The core runs the setups of active
+   * entries in one `useEffect`; it may return a cleanup.
    */
   setup?: (table: unknown) => void | (() => void)
   /**
-   * Сужение срезов состояния параметрами плагина (ADR 0039, §4): «сохранённое →
-   * допустимое» по ключу среза. Ядро отдаёт TanStack эффективное значение, не
-   * переписывая сохранённое.
+   * Narrows state slices by plugin parameters (ADR 0039, §4): "stored → allowed" per slice key.
+   * The core gives TanStack the effective value without rewriting the stored one.
    */
   narrow?: Record<string, NarrowState>
   /**
-   * Согласование состояния плагина с таблицей после каждого рендера (ADR 0040, §2):
-   * ядро зовёт его у всех присутствующих записей, включая выключенные. Обязано быть
-   * дешёвым, когда согласовывать нечего.
+   * Reconciles plugin state with the table after every render (ADR 0040, §2): the core calls
+   * it for every present entry, including disabled ones. It must be cheap when there is
+   * nothing to reconcile.
    */
   reconcile?: (table: unknown, context: PluginReconcileContext) => void
 }
@@ -201,7 +200,7 @@ export interface PluginStateSlice {
 
 export interface PluginReconcileContext {
   enabled: boolean
-  /** Хуки плагина: живые у включённого, из записи — у выключенного. */
+  /** The plugin's hooks: live when enabled, from the entry when disabled. */
   hooks: Record<string, unknown>
 }
 
@@ -507,9 +506,8 @@ type MergeFeatures<T extends readonly TablePlugin[]> = UnionToIntersection<
 >
 
 /**
- * Тип набора фич: always-on `commonFeature` + `columnOrderingFeature` (порядок/
- * индексы колонок нужны гриду всегда — getIndex/getIsFirstColumn/getIsLastColumn)
- * + слоты записей.
+ * The feature-set type: the always-on `commonFeature` + `columnOrderingFeature` (the grid always
+ * needs column order and indexes — getIndex/getIsFirstColumn/getIsLastColumn) + entry slots.
  */
 export type TesseraFeatures<T extends readonly TablePlugin[]> = {
   commonFeature: typeof commonFeature

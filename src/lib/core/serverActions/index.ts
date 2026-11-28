@@ -52,13 +52,13 @@ export {
   useServerActionMarks,
 } from './useServerActionMarks'
 
-/** Контекст колбэка серверного действия. */
+/** Context of a server action callback. */
 export interface ServerActionContext {
-  /** Прерывается следующим серверным действием и размонтированием грида. */
+  /** Aborted by the next server action and when the grid unmounts. */
   signal: AbortSignal
 }
 
-/** Результат колбэка: промис — запрос данных под новое состояние. */
+/** Callback result: a promise is the data request for the new state. */
 export type ServerActionResult = void | PromiseLike<unknown>
 
 interface Snapshot {

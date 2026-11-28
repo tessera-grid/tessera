@@ -8,7 +8,7 @@ import type { RowData, TableFeature, TableFeatures, Updater } from '../../types'
 import type { ServerSource } from './source'
 
 export interface RefreshRowsOptions {
-  /** Сразу скелет вместо строк на экране. */
+  /** Show a skeleton instead of the rows on screen right away. */
   purge?: boolean
 }
 

@@ -18,43 +18,43 @@ import { useSliceProjection } from '../reactivity'
 import { type ActionRef, actionLabelOf } from '../actions'
 import type { TableLabels } from '../localization'
 
-/** Объект отказа: ячейка, строка, колонка, диапазон, вся таблица или процесс вне таблицы. */
+/** Failure target: a cell, row, column, range, the whole table, or a process outside the table. */
 export type FailureTarget = FlashTarget | { table: true } | { process: string }
 
 export interface Failure {
-  /** Один отказ одного объекта: новый отказ того же объекта заменяет запись. */
+  /** One failure per object: a new failure of the same object replaces the entry. */
   key: string
   /**
-   * Действие справочника (ADR 0182, §5): журнал и объявления называют запись его подписью
-   * по текущему словарю. Встроенный код пишет только его.
+   * Catalog action (ADR 0182, §5): the log and announcements name the entry by its label in the
+   * current dictionary. Built-in code writes only this.
    */
   action?: ActionRef
-  /** Имя действия от приложения — его переводом, как есть; без `action`. */
+  /** Action name from the application — already translated, shown as is; without `action`. */
   label?: string
   target: FailureTarget
-  /** Причина из ответа. */
+  /** The reason from the response. */
   reason: string
-  /** Момент отказа, мс от эпохи. */
+  /** Time of the failure, ms since the epoch. */
   time: number
-  /** Повтор — есть, только если источник умеет повторять сам. */
+  /** Retry — present only when the source can retry by itself. */
   retry?: () => unknown
   /**
-   * За записью стоит несохранённая правка: сбросить её; запись уходит после вызова
-   * (ADR 0227, §6). У записи без правки поля нет — её только закрывают.
+   * The entry stands for an unsaved edit: discards it; the entry goes away after the call
+   * (ADR 0227, §6). An entry without an edit has no such field — it can only be dismissed.
    */
   discard?: () => void
-  /** Одно применение: отказы с одним `batch` и одной причиной журнал показывает группой. */
+  /** One apply: the log groups failures with the same `batch` and the same reason. */
   batch?: string
   /**
-   * Действия над набором записей одного источника одним вызовом (ADR 0227, §4): журнал зовёт
-   * функцию первой записи с ключами всех записей того же `owner`; без поля — `retry`/`discard`
-   * каждой записи.
+   * Actions over a set of entries of one source in one call (ADR 0227, §4): the log calls the
+   * first entry's function with the keys of all entries of the same `owner`; without the field —
+   * `retry`/`discard` of each entry.
    */
   bulk?: FailureBulk
 }
 
 export interface FailureBulk {
-  /** Источник: записи с одним `owner` принимают ключи друг друга. */
+  /** Source: entries with the same `owner` accept each other's keys. */
   owner: string
   retry?: (keys: readonly string[]) => void
   discard?: (keys: readonly string[]) => void
@@ -376,7 +376,7 @@ export const cellFailureOf = (
   columnId: string,
 ): Failure | undefined => failures[cellFailureKey(rowId, columnId)]
 
-/** Отказ значения ячейки — перерисовывает только её (ADR 0177, §5). */
+/** A cell value failure — re-renders only that cell (ADR 0177, §5). */
 export const useCellFailure = (
   table: unknown,
   rowId: string,

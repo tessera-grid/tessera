@@ -6,13 +6,13 @@
 import { logWarn } from '../util/logger'
 import { serverRowModelReason } from './pluginDiagnostics'
 
-/** Операции над строками, которые выполняет клиент или сервер. */
+/** Row operations that run on the client or the server. */
 export type DataOperation =
   'sorting' | 'filtering' | 'search' | 'pagination' | 'export'
 
 export type DataModeValue = 'client' | 'server'
 
-/** Режим данных: один на все операции или по операциям; не заданная операция — на клиенте. */
+/** Data mode: one for all operations or per operation; an operation not set runs on the client. */
 export type DataMode =
   DataModeValue | Partial<Record<DataOperation, DataModeValue>>
 

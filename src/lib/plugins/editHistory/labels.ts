@@ -2,56 +2,56 @@
 import { defineLabels } from '../../core/localization'
 
 export interface EditHistoryLabels {
-  /** Отменить последнюю правку (ADR 0222, §11). */
+  /** Undo the last edit (ADR 0222, §11). */
   undo: string
-  /** Повторить отменённую правку. */
+  /** Redo an undone edit. */
   redo: string
-  /** Кнопка и пункт «Отменить» с подписью записи. */
+  /** The "Undo" button and item with the entry's label. */
   undoEntry: (name: string) => string
-  /** Кнопка и пункт «Повторить» с подписью записи. */
+  /** The "Redo" button and item with the entry's label. */
   redoEntry: (name: string) => string
-  /** Перейти к записи истории — действие справочника. */
+  /** Go to a history entry — a catalog action. */
   rewind: string
-  /** История правок: кнопка и заголовок попапа. */
+  /** Edit history: the button and the popup title. */
   history: string
-  /** Пустая история. */
+  /** Empty history. */
   historyEmpty: string
-  /** Пояснение пустой истории. */
+  /** Explanation of an empty history. */
   historyEmptyDescription: string
-  /** Кнопка подвала попапа: к виду до первой правки (§11). */
+  /** Popup footer button: back to the view before the first edit (§11). */
   historyOriginal: string
-  /** Откаченная запись — для скринридера. */
+  /** An undone entry — for screen readers. */
   historyUndone: string
-  /** Пометка записи, чьи изменения ещё не применены (§14). */
+  /** Mark of an entry whose changes are not applied yet (§14). */
   historyUnsaved: string
-  /** Подсказка точки текущей записи (§11). */
+  /** Hint of the current entry's dot (§11). */
   historyCurrent: string
   historyCurrentUnsaved: string
-  /** Разделитель «Применить» (§14). */
+  /** The "Apply" separator (§14). */
   historyApplied: (count: number) => string
-  /** Вторая строка пункта попапа у операции над несколькими ячейками. */
+  /** Second line of a popup item for an operation on several cells. */
   historyCells: (count: number) => string
-  /** Запись операции над несколькими ячейками (`name` — действие, `count` — ячеек). */
+  /** Entry of an operation on several cells (`name` — the action, `count` — cells). */
   entryCells: (name: string, count: number) => string
-  /** Запись правки одной ячейки (`name` — действие, `target` — ячейка). */
+  /** Entry of an edit of one cell (`name` — the action, `target` — the cell). */
   entryCell: (name: string, target: string) => string
-  /** Объявление отмены (`name` — запись). */
+  /** Undo announcement (`name` — the entry). */
   announceUndone: (name: string) => string
-  /** Объявление повтора. */
+  /** Redo announcement. */
   announceRedone: (name: string) => string
-  /** Ячейки изменились с тех пор и пропущены (ADR 0222, §6). */
+  /** Cells changed since then and were skipped (ADR 0222, §6). */
   announceConflicts: (count: number) => string
-  /** Ячеек больше нет в данных — пропущены (§7). */
+  /** Cells are no longer in the data — skipped (§7). */
   announceMissing: (count: number) => string
-  /** Ячейки сейчас нельзя изменить — запись осталась (§3). */
+  /** Cells can't be changed right now — the entry stays (§3). */
   announceNotWritable: (count: number) => string
-  /** Строку после переноса уже переставили — отмена её не тронула (§13). */
+  /** The row was moved again after the move — undo didn't touch it (§13). */
   announceMoveSkipped: string
-  /** Ячейка записи скрыта фильтром или на другой странице (§9). */
+  /** The entry's cell is hidden by a filter or is on another page (§9). */
   announceHidden: string
-  /** Отменять нечего. */
+  /** Nothing to undo. */
   announceNothing: string
-  /** Повторять нечего. */
+  /** Nothing to redo. */
   announceNothingToRedo: string
 }
 

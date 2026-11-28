@@ -7,36 +7,36 @@ import type { ColumnDef } from '../../types'
 import type { TableLabels } from '../localization'
 import { withPluginBoundary } from '../pluginBoundary'
 
-/** Скрытая подпись шапки служебной колонки — подписью владельца (ADR 0182, §8). */
+/** Hidden header label of a service column — a label of its owner (ADR 0182, §8). */
 export type ServiceColumnLabel = (labels: TableLabels) => string
 
 /**
- * Привязка сервисной колонки плагина к сборке колонок (pre-table инъекция).
- * `make` строит колонку; `side`/`order` — размещение и порядок.
+ * Binds a plugin's service column into the column set (injected before the table is built).
+ * `make` builds the column; `side`/`order` set placement and order.
  */
 export interface ServiceColumn {
-  /** Стабильный базовый id (по нему таргетят видимость/пиннинг). */
+  /** Stable base id (visibility and pinning target it). */
   id: string
   make: () => ColumnDef<any, any, any>
-  /** `id` плагина-владельца; проставляет ядро при свёртке (граница ошибок, ADR 0037). */
+  /** `id` of the owner plugin; the core sets it when folding plugins (error boundary, ADR 0037). */
   pluginId?: string
-  /** Размещение в НАБОРЕ колонок (не пиннинг). */
+  /** Placement in the column SET (not pinning). */
   side: 'leading' | 'trailing'
   order: number
   /**
-   * Пиннинг колонки — политику объявляет плагин, ядро исполняет (columnPinning,
-   * фаза E позже). `when: 'always'` — закреплена всегда; `'with-user'` —
-   * присоединяется к блоку, когда потребитель сам закрепил что-то с этой стороны.
+   * Column pinning — the plugin declares the policy, the core applies it. `when: 'always'`
+   * keeps it pinned; `'with-user'` joins the pinned block when the user pinned something on
+   * that side.
    */
   pin?: {
     side: 'start' | 'end'
     when: 'always' | 'with-user'
   }
-  /** Скрытая подпись шапки (ADR 0165): плагин берёт её из своих подписей. */
+  /** Hidden header label (ADR 0165): the plugin takes it from its own labels. */
   label?: ServiceColumnLabel
-  /** Ширина — по кнопке грида из темы (ADR 0135). */
+  /** Width follows the grid's button from the theme (ADR 0135). */
   controlSized?: boolean
-  /** Колонка забирает свободное место строки (ADR 0025). */
+  /** The column takes the free space of the row (ADR 0025). */
   fill?: boolean
 }
 

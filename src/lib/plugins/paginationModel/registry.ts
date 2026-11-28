@@ -17,18 +17,18 @@ import { ownStage } from '../../core/rowEngine/engine'
 export const DEFAULT_PAGE_SIZE = 25
 
 export interface PaginationModelOptions {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
   /**
-   * Начальный размер страницы в строках верхнего уровня (по умолчанию 25). Семя
-   * состояния: текущим размером владеет срез `pagination` (ADR 0039).
+   * Initial page size in top-level rows (25 by default). A state seed: the `pagination` slice owns
+   * the current size (ADR 0039).
    */
   initialPageSize?: number
-  /** Страница и её размер: задаёт приложение; без него срез хранит грид. */
+  /** Page and its size set by the application; without it the grid keeps the slice. */
   pagination?: PaginationState
-  /** Новое значение среза после каждого изменения изнутри грида. */
+  /** New slice value after each change from inside the grid. */
   onPaginationChange?: (next: PaginationState) => void
-  /** Начальное значение среза, которым владеет грид; главнее `initialPageSize`. */
+  /** Initial value of the slice the grid owns; takes precedence over `initialPageSize`. */
   initialPagination?: PaginationState
 }
 

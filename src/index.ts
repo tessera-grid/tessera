@@ -190,3 +190,81 @@ export {
   DEFAULT_LABELS,
   unknownLabelKeys,
 } from './lib/core/localization'
+
+// Types that public signatures reference (ADR 0113, DC7): the API reference links to them.
+export type {
+  ActionId,
+  ActionLabel,
+  ActionLabels,
+  ActionRef,
+} from './lib/core/actions'
+export type {
+  BodyEventTarget,
+  BodyEvents,
+  NavigationKeyContext,
+  NavigationKeyEvent,
+  NavigationKeys,
+  RootContributionContext,
+  RootHookProps,
+} from './lib/core/bodyContributions'
+export type { LoadOptions } from './lib/core/columnOptions'
+export type { CoreOptions } from './lib/core/commonFeature.types'
+export type { CoreTableHandlers, CoreTableState } from './lib/core/coreState'
+export type { ServiceColumnLabel } from './lib/core/createColumns'
+export type {
+  BodyEndComponentProps,
+  RegisterSlotParams,
+  StatusBarComponentProps,
+} from './lib/core/createSlots/types'
+export type { DefaultColumnSizing } from './lib/core/defaultColumn'
+export type { PluginFactoryBuilder } from './lib/core/definePlugin'
+export type { DraftKind } from './lib/core/drafts/drafts'
+export type { NarrowState } from './lib/core/effectiveState'
+export type { FailureBulk } from './lib/core/failures/failuresFeature'
+export type { PluginReconcileContext } from './lib/core/features'
+export type {
+  ActionPanelControls,
+  CellSelectionSummary,
+  DisabledResult,
+  HeaderActionSlot,
+  HeaderMenuItem,
+  MenuAction,
+  MenuSection,
+} from './lib/core/headerActions/types'
+export type { KeyboardShortcutDefinition } from './lib/core/keyboardShortcut'
+export type { PluginDictionary } from './lib/core/localization/pluginLabels'
+export type { ExactLabelDictionary } from './lib/core/localization/resolveLabels'
+export type {
+  BranchArrival,
+  NewRowPlace,
+  RowFailure,
+  RowListChange,
+  RowLoadError,
+} from './lib/core/rowSource'
+export type { StubLoadError, StubRender } from './lib/core/stubs'
+export type { BodyEventHandler } from './lib/core/bodyContributions'
+export type { DataMode } from './lib/core/dataMode'
+export type { DataTypeRegistry } from './lib/core/dataTypes'
+export type { DefinePluginConfig } from './lib/core/definePlugin'
+export type { DisabledState } from './lib/core/headerActions/types'
+export type { Draft } from './lib/core/drafts/drafts'
+export type { KeyboardPlatformOption } from './lib/core/keyboardPlatform'
+export type { LabelsOf } from './lib/core/localization/pluginLabels'
+export type { NarrowContext } from './lib/core/effectiveState'
+export type { RowDraftMark } from './lib/core/drafts/drafts'
+export type { ShortcutSection } from './lib/core/keyboardShortcut'
+export type { SkeletonRowsRequest } from './lib/core/createSlots/types'
+export type { VirtualItem } from './vendor/tanstack-virtual/virtual-core'
+export type { WriteLimits } from './lib/core/cellWrites'
+export type { DataModeValue } from './lib/core/dataMode'
+export type { DataOperation } from './lib/core/dataMode'
+export type { DataTypeDefinition } from './lib/core/dataTypes'
+export type { DraftTarget } from './lib/core/drafts/drafts'
+export type { KeyboardPlatform } from './lib/core/keyboardPlatform'
+export type { PluginServiceColumn } from './lib/core/definePlugin'
+export type { PluginSlotDecl } from './lib/core/definePlugin/channels'
+export type { DataTypeAlign } from './lib/core/dataTypes'
+export type { DataTypeFormat } from './lib/core/dataTypes'
+export type { ServiceColumnParts } from './lib/core/definePlugin'
+export type { ServicePresence } from './lib/core/servicePresence'
+export type { PresenceTable } from './lib/core/servicePresence'

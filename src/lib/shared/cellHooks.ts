@@ -4,7 +4,7 @@
  */
 import type { CellComponentProps } from '../core/createSlots'
 
-/** Хук `cellErrors`: текст ошибки ячейки или `undefined` — ошибки нет. */
+/** The `cellErrors` hook: a cell's error text, or `undefined` — no error. */
 export interface CellErrorHook {
   getCellError: (ctx: CellComponentProps) => string | undefined
 }

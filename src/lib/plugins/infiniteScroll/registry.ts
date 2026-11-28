@@ -20,15 +20,15 @@ import type { InfiniteScrollHooks, InfiniteScrollState } from './types'
 import { infiniteScrollLabels } from './labels'
 
 export interface InfiniteScrollOptions {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
-  /** Попросить следующий блок; читается живо. */
+  /** Requests the next block; read live. */
   onLoadMore?: InfiniteScrollHooks['onLoadMore']
-  /** Есть ли ещё строки на сервере. */
+  /** Whether the server has more rows. */
   hasMore?: boolean
-  /** За сколько строк до края просить блок; по умолчанию — строк в окне. */
+  /** How many rows before the edge to request a block; the rows in the window by default. */
   threshold?: number
-  /** Счётчик загруженных строк в нижней панели; по умолчанию выключен. */
+  /** Loaded row counter in the status bar; off by default. */
   loadedCount?: boolean
 }
 

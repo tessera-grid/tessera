@@ -10,49 +10,49 @@ import type { TableIcons } from '../ui/icons'
 import type { PluginDiagnostic } from '../core/pluginDiagnostics'
 
 /**
- * Таблица из `useCreateTable` (ADR 0091): тип по форме, без параметров TanStack —
- * таблица с конкретными плагинами и данными к `Table<any, any>` не подходит.
+ * The table from `useCreateTable` (ADR 0091): typed by shape, without TanStack parameters — a
+ * table with specific plugins and data isn't assignable to `Table<any, any>`.
  */
 export interface DataGridTable {
   getPluginDiagnostics: () => PluginDiagnostic[]
 }
 
 export interface DataGridProps<D extends LabelDictionary = LabelDictionary> {
-  /** Инстанс таблицы, возвращаемый useCreateTable. */
+  /** The table instance returned by useCreateTable. */
   table: DataGridTable
   /**
-   * Тема (ADR 0090): 'auto' — по `.dark` у предка, 'light' и 'dark' — всегда.
+   * Theme (ADR 0090): 'auto' follows `.dark` on an ancestor, 'light' and 'dark' are fixed.
    * @default 'auto'
    */
   colorMode?: ColorMode
   /**
-   * Повышенный контраст (ADR 0088): 'auto' — по системной настройке
-   * prefers-contrast: more, 'more' — всегда, 'standard' — никогда.
+   * Increased contrast (ADR 0088): 'auto' follows the system setting prefers-contrast: more,
+   * 'more' — always, 'standard' — never.
    * @default 'auto'
    */
   contrast?: ContrastMode
-  /** Переопределение иконок таблицы. */
+  /** Overrides the table's icons. */
   icons?: Partial<TableIcons>
   /**
-   * Подписи таблицы: строка-шаблон с `{имя}` или функция; формы слова — ключами
-   * `<ключ>_<форма>` (ADR 0132).
+   * Table labels: a template string with `{name}` or a function; word forms use
+   * `<key>_<form>` keys (ADR 0132).
    */
   localization?: ExactLabelDictionary<D>
   /**
-   * number — высота в px; string — в процентах (50%, 100%); auto — контейнер по
-   * flexbox с flex: 1.
+   * number — height in px; string — in percent (50%, 100%); auto — a flexbox container with
+   * flex: 1.
    */
   height?: number | string | 'auto'
-  /** number — max-высота в px; string — в процентах. */
+  /** number — max height in px; string — in percent. */
   maxHeight?: number | string
   /**
-   * Свой вид заглушек пустой таблицы по причине (ADR 0123): `noData`, `noColumns`,
-   * `columnsHidden`, `filtered`, `loadError` и причины плагинов — узел или функция от
-   * `{ action, error }`. Какую заглушку показать, решает грид.
+   * Custom empty-table stubs by reason (ADR 0123): `noData`, `noColumns`, `columnsHidden`,
+   * `filtered`, `loadError` and plugin reasons — a node or a function of `{ action, error }`.
+   * The grid decides which stub to show.
    */
   stubs?: StubsOverride
-  /** Доп. CSS-класс на обёртке грида (несущей `.data-grid-theme`). */
+  /** Extra CSS class on the grid wrapper (the one with `.data-grid-theme`). */
   className?: string
-  /** Инлайн-стиль обёртки грида (пер-инстансное переопределение токенов темы). */
+  /** Inline style of the grid wrapper (per-instance theme token overrides). */
   style?: CSSProperties
 }

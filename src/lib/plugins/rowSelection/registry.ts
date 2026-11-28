@@ -31,15 +31,15 @@ export interface RowSelectionOptions extends Omit<
   RowSelectionModelOptions,
   'enabled'
 > {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
-  /** Счётчик выбранных строк в нижней панели (ADR 0038); по умолчанию выключен. */
+  /** Selected row counter in the status bar (ADR 0038); off by default. */
   selectedCount?: boolean
-  /** Что выбирает флажок шапки (ADR 0179); по умолчанию `'filtered'`. */
+  /** What the header checkbox selects (ADR 0179); `'filtered'` by default. */
   selectAll?: SelectAllScope
   /**
-   * Бизнес-колбэки плагина, задаются прямо в аргументах фабрики. Читаются живо через
-   * `table.getHooks()`. Частичный набор дополняется no-op дефолтами (`resolveHooks`).
+   * The plugin's business callbacks, set directly in the factory arguments. Read live through
+   * `table.getHooks()`. A partial set is completed with no-op defaults (`resolveHooks`).
    */
   onSelectRow?: RowSelectionHooks['onSelectRow']
   onSelectAllRows?: RowSelectionHooks['onSelectAllRows']

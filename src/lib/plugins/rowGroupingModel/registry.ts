@@ -18,13 +18,13 @@ import { objectGroupingFeature } from './objectGrouping'
 import { ownStage } from '../../core/rowEngine/engine'
 
 export interface RowGroupingModelOptions {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
-  /** Колонки группировки по порядку: задаёт приложение; без него срез хранит грид. */
+  /** Grouping columns in order, set by the application; without it the grid keeps the slice. */
   grouping?: GroupingState
-  /** Новое значение среза после каждого изменения изнутри грида. */
+  /** New slice value after each change from inside the grid. */
   onGroupingChange?: (next: GroupingState) => void
-  /** Начальное значение среза, которым владеет грид. */
+  /** Initial value of the slice the grid owns. */
   initialGrouping?: GroupingState
 }
 

@@ -1,4 +1,4 @@
-/** Hook-слайс плагина columnPinning + стороны закрепления. */
+/** Hooks slice of the columnPinning plugin + pinning sides. */
 export interface ColumnPinningHooks {
   onTogglePin: (pinned: boolean) => void
 }

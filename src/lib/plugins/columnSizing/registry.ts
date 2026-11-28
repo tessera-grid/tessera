@@ -18,15 +18,15 @@ import type { ColumnSizingHooks } from './types'
 import { columnSizingLabels } from './labels'
 
 export interface ColumnSizingOptions {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
-  /** Бизнес-колбэк окончания ресайза (аргумент фабрики); читается живо. */
+  /** Business callback at the end of a resize (a factory argument); read live. */
   onColumnResizeEnd?: ColumnSizingHooks['onColumnResizeEnd']
-  /** Ресайз отменён: Escape, запрет на лету, колонка ушла (ADR 0040). */
+  /** The resize was cancelled: Escape, disallowed on the fly, the column went away (ADR 0040). */
   onColumnResizeCancel?: ColumnSizingHooks['onColumnResizeCancel']
   /**
-   * Подгонять колонки по содержимому на приходе данных и на каждой новой ссылке `data`,
-   * кроме протянутых пользователем (ADR 0217, §2).
+   * Fit columns to content when data arrives and on every new `data` reference, except columns
+   * the user resized (ADR 0217, §2).
    */
   autosizeOnData?: boolean
 }

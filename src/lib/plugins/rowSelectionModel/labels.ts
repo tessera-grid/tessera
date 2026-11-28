@@ -2,19 +2,19 @@
 import { defineLabels } from '../../core/localization'
 
 export interface RowSelectionModelLabels {
-  /** Объявление числа выбранных строк */
+  /** Announcement of the number of selected rows */
   announceSelection: (count: number) => string
-  /** «Выбрано всё, кроме k», когда строк данных в выборке не знает сервер (ADR 0144, §5) */
+  /** "All selected except k" when the server doesn't know the data rows in the result set (ADR 0144, §5) */
   selectedAllExcept: (count: number) => string
   selectedAllExceptShort: (count: number) => string
   /**
-   * Выбраны группы без числа их строк (ADR 0148, §3): «12 строк и 2 группы»; `groups` —
-   * подпись `selectedGroupsCount`, при нуле строк — только она
+   * Groups are selected without their row counts (ADR 0148, §3): "12 rows and 2 groups"; `groups`
+   * is the `selectedGroupsCount` label, with zero rows — only that
    */
   selectedRowsAndGroups: (count: number, groups: string) => string
   selectedRowsAndGroupsShort: (count: number, groups: string) => string
   selectedGroupsCount: (count: number) => string
-  /** Ветки дерева, выбранные без числа их строк (ADR 0162, §4): «2 ветки» */
+  /** Tree branches selected without their row counts (ADR 0162, §4): "2 branches" */
   selectedBranchesCount: (count: number) => string
 }
 

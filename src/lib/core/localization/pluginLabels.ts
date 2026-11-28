@@ -12,8 +12,8 @@ import {
 } from './resolveLabels'
 
 /**
- * Наборы подписей владельцев по их id — для типа словаря приложения. Владелец дополняет
- * интерфейс (`declare module`): `interface PluginLabels { archiveRows: typeof archiveRowsLabels }`.
+ * Owners' label sets by their id — for the type of the application's dictionary. An owner
+ * augments the interface (`declare module`): `interface PluginLabels { archiveRows: typeof archiveRowsLabels }`.
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface PluginLabels {}
@@ -22,7 +22,7 @@ type Owner = keyof PluginLabels & string
 
 type PluralForm = (typeof PLURAL_FORMS)[number]
 
-/** Подписи набора. */
+/** Labels of a set. */
 export type LabelsOf<S> = S extends LabelSet<string, infer T> ? T : never
 
 /** Подписи набора с параметром `count`: только у них бывают ключи форм слова. */
@@ -49,7 +49,7 @@ type UnionToIntersection<U> = (
   ? I
   : never
 
-/** Ключи владельцев в словаре приложения: строка-шаблон или функция, формы слова `_<форма>`. */
+/** Owner keys in the application's dictionary: a template string or a function, word forms `_<form>`. */
 export type PluginDictionary = UnionToIntersection<
   {
     [P in Owner]: {
@@ -66,7 +66,7 @@ type FunctionKeys<T> = {
 }[keyof T] &
   string
 
-/** Набор подписей владельца: вызов с подписями таблицы даёт подписи владельца на её языке. */
+/** An owner's label set: calling it with the table's labels gives the owner's labels in its language. */
 export interface LabelSet<
   TId extends string = string,
   T = unknown,
@@ -74,7 +74,7 @@ export interface LabelSet<
 > {
   (labels: object): T
   readonly id: TId
-  /** Ключи без форм слова. */
+  /** Keys without word forms. */
   readonly keys: readonly string[]
   readonly defaults: Readonly<Record<string, string>>
   readonly params: TParams
@@ -93,8 +93,9 @@ const isFormOf = (
 }
 
 /**
- * Объявить подписи владельца: `T` — тип подписей, `defaults` — английские строки-шаблоны с
- * `{имя}` и формами `_<форма>`, `params` — имена параметров подписей-функций по порядку.
+ * Declares an owner's labels: `T` is the labels type, `defaults` are English template strings
+ * with `{name}` and `_<form>` word forms, `params` are the parameter names of function labels
+ * in order.
  */
 export const defineLabels =
   <T>() =>
@@ -139,8 +140,8 @@ export const labelSetKeys = (set: LabelSet): string[] => {
 }
 
 /**
- * Ключи словаря, которых нет ни у ядра, ни в наборах `sets`. С `allLabelSets` проверяет
- * словарь приложения целиком (ADR 0182, §9).
+ * Dictionary keys that neither the core nor the `sets` have. With `allLabelSets` it checks the
+ * application's whole dictionary (ADR 0182, §9).
  */
 export const unknownLabelKeys = (
   dictionary: object,

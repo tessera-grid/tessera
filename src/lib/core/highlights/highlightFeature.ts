@@ -38,23 +38,23 @@ export type HighlightTarget =
   | { column: string }
   | RangeTarget
 
-/** Цель вспышки и подсветки (ADR 0134, ADR 0152). */
+/** Target of a flash and a highlight (ADR 0134, ADR 0152). */
 export type FlashTarget = HighlightTarget
 
 export type HighlightTone = 'danger' | 'warning' | 'success' | (string & {})
 
 export interface HighlightOptions {
-  /** Встроенный или свой тон; по умолчанию `warning`. */
+  /** A built-in or custom tone; `warning` by default. */
   tone?: HighlightTone
-  /** Держать столько миллисекунд, затем погасить. Без него — до снятия. */
+  /** Keep it this many milliseconds, then fade out. Without it — until removed. */
   duration?: number
-  /** Снять, когда промис выполнится или будет отклонён. */
+  /** Remove it when the promise resolves or rejects. */
   until?: PromiseLike<unknown>
-  /** Группа подсветок; по умолчанию `'default'`. */
+  /** Highlight group; `'default'` by default. */
   key?: string
-  /** Текст для скринридера: объявляется и висит `aria-description` цели. */
+  /** Text for screen readers: announced and kept as the target's `aria-description`. */
   label?: string
-  /** Докрутить к цели: к строке, ячейке или колонке (ADR 0104). */
+  /** Scroll to the target: a row, cell or column (ADR 0104). */
   reveal?: boolean
 }
 

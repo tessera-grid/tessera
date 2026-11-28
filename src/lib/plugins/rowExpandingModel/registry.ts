@@ -14,13 +14,13 @@ import { neverInert } from '../../core/pluginDiagnostics'
 import { ownStage } from '../../core/rowEngine/engine'
 
 export interface RowExpandingModelOptions {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
-  /** Раскрытые строки (`true` — все): задаёт приложение; без него срез хранит грид. */
+  /** Expanded rows (`true` — all) set by the application; without it the grid keeps the slice. */
   expanded?: ExpandedState
-  /** Новое значение среза после каждого изменения изнутри грида. */
+  /** New slice value after each change from inside the grid. */
   onExpandedChange?: (next: ExpandedState) => void
-  /** Начальное значение среза, которым владеет грид. */
+  /** Initial value of the slice the grid owns. */
   initialExpanded?: ExpandedState
 }
 

@@ -25,20 +25,20 @@ import { columnAggregationLabels } from './labels'
 import { summarySection } from './viewSettingsSection'
 
 export interface ColumnAggregationOptions {
-  /** `false` — плагин отключён: действуют функции колонок. */
+  /** `false` disables the plugin: the columns' own functions apply. */
   enabled?: boolean
-  /** Выбор функций: задаёт приложение; без него срез хранит грид. */
+  /** Function choice set by the application; without it the grid keeps the slice. */
   columnAggregations?: ColumnAggregationsState
-  /** Новое значение среза после каждого изменения изнутри грида. */
+  /** New slice value after each change from inside the grid. */
   onColumnAggregationsChange?: (next: ColumnAggregationsState) => void
-  /** Начальное значение среза, которым владеет грид. */
+  /** Initial value of the slice the grid owns. */
   initialColumnAggregations?: ColumnAggregationsState
-  /** Свои функции по имени; имя уходит серверу, как имена встроенных. */
+  /** Custom functions by name; the name is sent to the server like built-in names. */
   functions?: Record<string, ColumnAggregationFunction>
-  /** Сводку колонки можно менять; `false` — пункта нет (SU6). */
+  /** Whether a column's summary can be changed; `false` — no item (SU6). */
   canSummarizeColumn?: (column: AggregationColumn) => boolean
   /**
-   * Отказ сервера откатывает выбор (по умолчанию true); `false` — выбор остаётся новым (ADR 0116).
+   * A server refusal reverts the choice (true by default); `false` — the new choice stays (ADR 0116).
    */
   revertOnReject?: boolean
 }

@@ -2,58 +2,58 @@
 import { defineLabels } from '../../core/localization'
 
 export interface CellEditingLabels {
-  /** Фильтр дат (ADR 0047): условия, пресеты, поле времени, листание месяцев */
+  /** Date filter (ADR 0047): conditions, presets, time field, month paging */
   time: string
-  /** Тултип и доступное имя кнопки правки ячейки (`cellEditing`) */
+  /** Tooltip and accessible name of the cell edit button (`cellEditing`) */
   editCell: string
-  /** Доступное имя поля встроенного редактора ячейки (`column` — имя колонки) */
+  /** Accessible name of the built-in cell editor field (`column` is the column name) */
   editCellValue: (column: string) => string
-  /** Ошибка поля правки: набранное — не число (ADR 0175, ED4) */
+  /** Edit field error: the input is not a number (ADR 0175, ED4) */
   editInvalidNumber: string
-  /** Ошибка поля правки: набранное не разбирается в тип колонки (ADR 0175, ED2) */
+  /** Edit field error: the input doesn't parse into the column type (ADR 0175, ED2) */
   editInvalidValue: string
-  /** Причина отклонения правки: значение изменилось во время правки (ADR 0175, ED22) */
+  /** Why an edit was rejected: the value changed during the edit (ADR 0175, ED22) */
   editConflict: string
-  /** Пункт поля с поиском, очищающий значение ячейки (ADR 0175, ED8) */
+  /** Item of a search field that clears the cell value (ADR 0175, ED8) */
   editClear: string
-  /** Кнопки поля правки на касании: сохранить, как Enter, и отменить, как Escape (ADR 0231, §8) */
+  /** Edit field buttons on touch: save like Enter and cancel like Escape (ADR 0231, §8) */
   editDone: string
   editCancel: string
-  /** Поиск по вариантам в редакторе ячейки (ADR 0175, ED19) */
+  /** Option search in the cell editor (ADR 0175, ED19) */
   editSearchOptions: string
-  /** Редактор ячейки: вариантов нет */
+  /** Cell editor: no options */
   editNoOptions: string
-  /** Редактор ячейки: варианты справочника загружаются */
+  /** Cell editor: lookup options are loading */
   editLoadingOptions: string
-  /** Редактор ячейки: варианты справочника не загрузились */
+  /** Cell editor: lookup options failed to load */
   editOptionsError: string
-  /** Редактор ячейки: повторить загрузку вариантов */
+  /** Cell editor: retry loading options */
   editRetry: string
-  /** Вид черновика значения ячейки в пульте (ADR 0178, §5). */
+  /** Draft kind of a cell value in the unsaved-changes panel (ADR 0178, §5). */
   cellDraftKind: string
-  /** Отметка несохранённого значения ячейки: имя и причина «было, стало». */
+  /** Mark of an unsaved cell value: name and the "was, now" reason. */
   cellDraft: string
   cellDraftReason: (was: string, now: string) => string
-  /** Откатить несохранённое значение ячейки. */
+  /** Revert an unsaved cell value. */
   cellDraftRollback: string
-  /** Строки до сохранения (ADR 0178, §7): виды в пульте и откат в колонке действий. */
+  /** Rows before saving (ADR 0178, §7): kinds in the panel and revert in the actions column. */
   rowInsertDraftKind: string
   rowDeleteDraftKind: string
-  /** Сводка новой строки в пульте: первые значения и сколько ещё (DR43). */
+  /** Summary of a new row in the panel: the first values and how many more (DR43). */
   rowInsertDraftMore: (values: string, count: number) => string
   rowInsertDiscard: string
   rowDeleteDiscard: string
-  /** Объявление отказа сохранения ячейки (`column` — имя колонки) */
+  /** Announcement that a cell save failed (`column` is the column name) */
   announceSaveFailed: (name: string, target: string, error: string) => string
-  /** Действие: изменить черновик правки */
+  /** Action: change the edit draft */
   actionChangeDraft: string
-  /** Действие: значение не прошло проверку */
+  /** Action: the value failed validation */
   actionValidationFailed: string
-  /** Действие: переключить булево значение клавишей */
+  /** Action: toggle a boolean value with a key */
   actionToggle: string
-  /** Действие: откат новой или удалённой строки */
+  /** Action: revert a new or removed row */
   actionRowDraftDiscard: string
-  /** Действия записи в ячейки (ADR 0219, §8) */
+  /** Cell write actions (ADR 0219, §8) */
   actionPaste: string
   actionCut: string
   actionClear: string
@@ -61,29 +61,29 @@ export interface CellEditingLabels {
   actionFillDown: string
   actionFillRight: string
   actionWrite: string
-  /** Причина отказа записи текста: не разобрался по типу или не прошёл проверку */
+  /** Why writing text was refused: it didn't parse for the type or failed validation */
   writeInvalidReason: (reason: string, text: string) => string
-  /** Объявление операции записи (`name` — действие, `count` — записано ячеек) */
+  /** Announcement of a write operation (`name` — the action, `count` — cells written) */
   announceWritten: (name: string, count: number) => string
-  /** Часть объявления: пропущено ячеек только для чтения */
+  /** Part of the announcement: read-only cells skipped */
   announceWriteSkipped: (count: number) => string
-  /** Часть объявления: ячеек с ошибкой */
+  /** Part of the announcement: cells with errors */
   announceWriteInvalid: (count: number) => string
-  /** Объявление: пакет операции сохранён */
+  /** Announcement: the operation's batch was saved */
   announceWriteSaved: (name: string) => string
-  /** Объявление: пакет операции не сохранён */
+  /** Announcement: the operation's batch was not saved */
   announceWriteFailed: (name: string, error: string) => string
-  /** Итог применения (ADR 0227, §1) — плашка и объявление: сохранено всё */
+  /** Apply outcome (ADR 0227, §1) — alert and announcement: everything was saved */
   applySaved: (count: number) => string
-  /** Итог применения: отказано части — сколько сохранено из общего числа */
+  /** Apply outcome: part was refused — how many were saved out of the total */
   applyPartly: (saved: number, total: number) => string
-  /** Итог применения: сервер отказал всем правкам */
+  /** Apply outcome: the server refused all edits */
   applyNone: (total: number) => string
-  /** Итог применения: запрос не прошёл целиком */
+  /** Apply outcome: the whole request failed */
   applyFailed: (reason: string) => string
-  /** Действие плашки частичного итога: открыть журнал отказов */
+  /** Action of the partial-outcome alert: open the failure log */
   applyShow: string
-  /** Действие плашки частичного итога без журнала: применить несохранённое повторно */
+  /** Action of the partial-outcome alert without a log: apply the unsaved changes again */
   applyRetry: string
 }
 

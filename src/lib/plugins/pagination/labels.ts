@@ -2,32 +2,32 @@
 import { defineLabels } from '../../core/localization'
 
 export interface PaginationLabels {
-  /** Доступное имя контрола пагинации (`aria-label` на `role="navigation"`) */
+  /** Accessible name of the pagination control (`aria-label` on `role="navigation"`) */
   pagination: string
-  /** Видимая метка выбора размера страницы */
+  /** Visible label of the page size select */
   rowsPerPage: string
-  /** Кнопки пагинации: тултипы и доступные имена */
+  /** Pagination buttons: tooltips and accessible names */
   firstPage: string
   previousPage: string
   nextPage: string
   lastPage: string
-  /** Кнопка номера: доступное имя и подпись — номер на языке таблицы */
+  /** Page number button: accessible name and label — the number in the table's language */
   goToPage: (page: number) => string
   pageNumber: (page: number) => string
-  /** Поле номера: доступное имя и подпись справа, «of 40» */
+  /** Page number field: accessible name and the label on the right, "of 40" */
   pageInput: string
   pageOfTotal: (pages: number) => string
-  /** Диапазон строк текущей страницы: «1–25 of 1000» */
+  /** Row range of the current page: "1–25 of 1000" */
   pageRange: (from: number, to: number, total: number) => string
-  /** Диапазон строк страницы, когда итог неизвестен: «1–25 of many» (ADR 0158) */
+  /** Row range of the page when the total is unknown: "1–25 of many" (ADR 0158) */
   pageRangeOfMany: (from: number, to: number) => string
-  /** Объявление смены страницы */
+  /** Page change announcement */
   pageAnnouncement: (page: number, pages: number) => string
-  /** Объявление смены страницы, когда число страниц неизвестно */
+  /** Page change announcement when the page count is unknown */
   pageAnnouncementOfMany: (page: number) => string
-  /** Действие: смена страницы */
+  /** Action: change the page */
   actionChangePage: string
-  /** Действие: смена размера страницы */
+  /** Action: change the page size */
   actionChangePageSize: string
 }
 

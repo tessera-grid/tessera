@@ -2,13 +2,13 @@
 import { defineLabels } from '../../core/localization'
 
 export interface ContextMenuLabels {
-  /** Доступное имя контекстного меню (`aria-label` на `role="menu"`) */
+  /** Accessible name of the context menu (`aria-label` on `role="menu"`) */
   contextMenu: string
-  /** Пункт меню ячейки: повторить отклонённое сохранение (ADR 0177, OB16). */
+  /** Cell menu item: retry a rejected save (ADR 0177, OB16). */
   retrySave: string
-  /** Пункт меню ячейки: отменить ждущее сохранение (ADR 0177, OB16). */
+  /** Cell menu item: cancel a pending save (ADR 0177, OB16). */
   cancelSave: string
-  /** Пункт меню ячейки на касании: подсказка с полным обрезанным текстом (ADR 0231, §6). */
+  /** Cell menu item on touch: a hint with the full truncated text (ADR 0231, §6). */
   showFullText: string
 }
 

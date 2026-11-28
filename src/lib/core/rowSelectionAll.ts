@@ -9,45 +9,46 @@ import type { RowSelectionState } from '@tanstack/react-table'
 
 import { GROUP_ROW_PREFIX, groupKeysOf } from './rowSource'
 
-/** Узел группы в дереве выбора: путь её значений и состояние внутри неё. */
+/** A group node in the selection tree: the path of its values and the state inside it. */
 export interface RowSelectionGroup {
-  /** Путь значений группировки от корня: `['US', 'Smith']`. */
+  /** Path of grouping values from the root: `['US', 'Smith']`. */
   keys: unknown[]
-  /** Группа выбрана целиком, кроме `except` и узлов `groups` внутри неё. */
+  /** The whole group is selected, except `except` and the `groups` nodes inside it. */
   all: boolean
-  /** Строки, чьё состояние обратно `all`. */
+  /** Rows whose state is the opposite of `all`. */
   except: string[]
   groups?: RowSelectionGroup[]
 }
 
 /**
- * Узел ветки дерева в дереве выбора (ADR 0162, §2): узлы вложены по дереву строк — узел ветки
- * стоит внутри узла её родителя.
+ * A tree branch node in the selection tree (ADR 0162, §2): nodes nest like the row tree — a
+ * branch node sits inside its parent's node.
  */
 export interface RowSelectionBranch {
-  /** Строка-родитель ветки. */
+  /** The branch's parent row. */
   id: string
-  /** Ветка выбрана целиком, кроме `except` и узлов `branches` внутри неё. */
+  /** The whole branch is selected, except `except` and the `branches` nodes inside it. */
   all: boolean
-  /** Вложенные строки ветки, чьё состояние обратно `all`. */
+  /** Nested rows of the branch whose state is the opposite of `all`. */
   except: string[]
   branches?: RowSelectionBranch[]
 }
 
 /**
- * Выбор без перечисления строк: выбрана вся выборка (`all`), кроме `except`, или не выбрана,
- * кроме `except`; узлы `groups` — группы, чьё состояние отличается от родителя (ADR 0148);
- * узлы `branches` — ветки дерева (ADR 0162). Узлы групп и веток вместе не встречаются.
+ * Selection without listing rows: the whole result set is selected (`all`) except `except`, or
+ * not selected except `except`; `groups` nodes are groups whose state differs from their parent
+ * (ADR 0148); `branches` nodes are tree branches (ADR 0162). Group and branch nodes never
+ * appear together.
  */
 export interface RowSelectionAll {
   all: boolean
-  /** Строки, чьё состояние обратно `all`. */
+  /** Rows whose state is the opposite of `all`. */
   except: string[]
   groups?: RowSelectionGroup[]
   branches?: RowSelectionBranch[]
 }
 
-/** Срез выбора строк: выбранные `id` или «всё, кроме». */
+/** The row selection slice: selected `id`s or "all except". */
 export type RowSelectionValue = RowSelectionState | RowSelectionAll
 
 export const isAllSelection = (value: unknown): value is RowSelectionAll =>

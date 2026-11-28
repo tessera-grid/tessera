@@ -2,10 +2,10 @@
 import { defineLabels } from '../../core/localization'
 
 export interface CalendarLabels {
-  /** Фильтр дат (ADR 0047): условия, пресеты, поле времени, листание месяцев */
+  /** Date filter (ADR 0047): conditions, presets, time field, month paging */
   previousMonth: string
   nextMonth: string
-  /** Поле времени (ADR 0183, PK20): сегменты часов, минут и половины суток, кнопка списка */
+  /** Time field (ADR 0183, PK20): hour, minute and AM/PM segments, the list button */
   timeHours: string
   timeMinutes: string
   timeDayPeriod: string

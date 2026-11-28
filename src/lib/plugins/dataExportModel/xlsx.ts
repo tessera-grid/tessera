@@ -9,7 +9,7 @@ export type XlsxFormatOptions = Pick<
   BuildXlsxOptions,
   'timeZone' | 'sheetName'
 > & {
-  /** Собирать XLSX в Worker, если браузер и данные это позволяют. По умолчанию false. */
+  /** Build the XLSX in a Worker when the browser and the data allow it. False by default. */
   worker?: boolean
 }
 

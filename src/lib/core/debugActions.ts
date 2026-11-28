@@ -6,20 +6,20 @@
 import { INPUT_MODALITY_ATTR } from './inputModality'
 import { isThenable, rejectionText } from '../util/thenable'
 
-/** Откуда действие: указатель, клавиатура, вызов приложения или сам грид. */
+/** Where an action came from: pointer, keyboard, an application call, or the grid itself. */
 export type DebugActionSource = 'pointer' | 'keyboard' | 'api' | 'auto'
 
 export interface DebugAction {
-  /** Порядковый номер у экземпляра таблицы, с 1. */
+  /** Sequence number within the table instance, from 1. */
   id: number
-  /** `id` плагина-владельца; `'core'` — ядро. */
+  /** `id` of the owner plugin; `'core'` for the core. */
   plugin: string
   action: string
   detail?: unknown
   source: DebugActionSource
-  /** Начало и конец жеста: протяжки, перетаскивания, сессии правки. */
+  /** Start and end of a gesture: a drag-resize, a drag, an edit session. */
   phase?: 'start' | 'end'
-  /** Номер исходного действия у отложенного итога. */
+  /** Number of the original action for a deferred outcome. */
   cause?: number
 }
 
@@ -28,9 +28,9 @@ export type OnDebugAction = (action: DebugAction) => void
 export interface ActionReport {
   plugin: string
   action: string
-  /** Параметры; функция вызывается, только если есть слушатель. */
+  /** Parameters; the function is called only when there is a listener. */
   detail?: unknown
-  /** По умолчанию — `'api'`. */
+  /** `'api'` by default. */
   source?: DebugActionSource
   phase?: 'start' | 'end'
   cause?: number
@@ -60,8 +60,8 @@ const lastInputModality = (): 'pointer' | 'keyboard' | undefined => {
 }
 
 /**
- * Источник по событию браузера: клавиша — `keyboard`; нажатие кнопки с клавиатуры даёт
- * `click` с `detail: 0`; остальное из событий — `pointer`; без события — `api`.
+ * Source from a browser event: a key is `keyboard`; pressing a button from the keyboard gives
+ * a `click` with `detail: 0`; other events are `pointer`; no event means `api`.
  */
 export const sourceOf = (event?: unknown): DebugActionSource => {
   const native =
@@ -87,16 +87,16 @@ export const userSourceOf = (event?: unknown): DebugActionSource => {
   return source === 'api' ? (lastInputModality() ?? 'api') : source
 }
 
-/** Сообщить действие; без канала у таблицы и без слушателя — `undefined`. */
+/** Reports an action; returns `undefined` when the table has no channel or no listener. */
 export const reportAction = (
   table: unknown,
   report: ActionReport,
 ): number | undefined => (table as Reporter | undefined)?.reportAction?.(report)
 
 /**
- * Итог асинхронного результата действия — отдельное действие `<action>Resolved` или
- * `<action>Rejected` с `cause`: заданным или последним действием этой задачи.
- * Синхронный результат итога не даёт.
+ * Outcome of an action's async result — a separate `<action>Resolved` or `<action>Rejected`
+ * action with `cause`: the given action or the last action of this task. A synchronous result
+ * produces no outcome.
  */
 export const reportOutcome = (
   table: unknown,

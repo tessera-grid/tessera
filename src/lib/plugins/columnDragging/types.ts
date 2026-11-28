@@ -10,19 +10,19 @@ export interface ColumnDraggingState {
 
 export interface ColumnDraggingHooks {
   /**
-   * Колонка перенесена; промис — ожидание на ручке, отказ возвращает колонку к прежним
-   * соседям (ADR 0114).
+   * A column was moved; a promise shows pending on the handle, a rejection returns the column
+   * to its previous neighbors (ADR 0114).
    */
   onColumnDragEnd: (props: {
-    /** Индекс среди перетаскиваемых листьев; у группы — её первого листа. */
+    /** Index among draggable leaves; for a group — that of its first leaf. */
     dragIndex: number
     hoverIndex: number
-    /** Перенесённый узел — лист или группа (ADR 0052). */
+    /** The moved node — a leaf or a group (ADR 0052). */
     columnId: string
-    /** Новый порядок листьев. */
+    /** The new leaf order. */
     columnOrder: string[]
   }) => void | PromiseLike<unknown>
-  /** Перетаскивание завершилось без перестановки (ADR 0040, §1). */
+  /** The drag ended without reordering (ADR 0040, §1). */
   onColumnDragCancel?: (end: {
     columnId: string
     reason: SessionCancelReason

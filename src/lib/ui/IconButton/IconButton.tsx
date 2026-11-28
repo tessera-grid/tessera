@@ -28,23 +28,23 @@ const iconButtonClass = clsx('data-grid__icon-button', styles.iconButton)
 const simpleIconButtonClass = clsx(iconButtonClass, ringStyles.ring)
 
 export interface ButtonTooltipProps {
-  /** Сторона тултипа. */
+  /** Tooltip side. */
   tooltipSide?: TooltipSide
   /**
-   * Тултип и у выключенной кнопки: она остаётся в порядке фокуса и под указателем
-   * (`aria-disabled`), нажатия не доходят.
+   * Tooltip on a disabled button too: it stays in the focus order and under the pointer
+   * (`aria-disabled`), presses don't go through.
    */
   tooltipWhenDisabled?: boolean
 }
 
-/** Тон действия (ADR 0206): `danger` — действие безвозвратно теряет данные пользователя. */
+/** Action tone (ADR 0206): `danger` — the action irreversibly loses user data. */
 export interface ToneProps {
   tone?: 'danger'
 }
 
 /**
- * Общие пропсы производных кнопок кита (ADR 0128): занятость, остановка дуги при отказе,
- * тултип выключенной и тон — как у базы.
+ * Shared props of the kit's derived buttons (ADR 0128): busy state, stopping the arc on failure,
+ * the disabled tooltip and the tone — as in the base.
  */
 export interface DerivedButtonProps
   extends ButtonStatesProps, FailureProps, ToneProps {
@@ -55,30 +55,30 @@ export interface DerivedButtonProps
 }
 
 /**
- * Включённое состояние кнопки (ADR 0129): цвет значка и бабл — точка или число. Узел
- * бабла есть только у кнопки, которой передан `active`.
+ * Active state of a button (ADR 0129): icon color and a badge — a dot or a number. Only a button
+ * that is passed `active` has the badge node.
  */
 export interface ActiveProps {
-  /** Действие включено: фильтр задан, колонки скрыты, режим выбран. */
+  /** The action is on: a filter is set, columns are hidden, a mode is chosen. */
   active?: boolean
-  /** Число в бабле вместо точки — у включённой кнопки при `count` > 0. */
+  /** A number in the badge instead of a dot — on an active button when `count` > 0. */
   count?: number
-  /** Значок включённой кнопки вместо обычного; бабл остаётся. */
+  /** Icon of the active button instead of the regular one; the badge stays. */
   activeIcon?: ReactNode
-  /** `false` — без бабла; цвет значка остаётся. */
+  /** `false` — no badge; the icon color stays. */
   indicator?: boolean
-  /** Тон бабла: `error` — счётчик отказов журнала (ADR 0177, JR1). */
+  /** Badge tone: `error` — the failure log's counter (ADR 0177, JR1). */
   indicatorTone?: 'active' | 'draft' | 'error'
   /**
-   * Есть неприменённое (ADR 0178, §4): точка цвета несохранённого, кнопка видна без наведения.
-   * С `active` главнее включённое — точка включённого.
+   * Has something not applied (ADR 0178, §4): a dot in the unsaved color, the button is visible
+   * without hover. With `active` the active state wins — the active dot.
    */
   draft?: boolean
 }
 
 /** Кнопка ячейки, заголовка или строки (ADR 0128). */
 export interface RevealProps {
-  /** Скрыта до наведения на своё место; включённая и занятая видна всегда. */
+  /** Hidden until its area is hovered; an active or busy button is always visible. */
   revealOnHover?: boolean
 }
 
@@ -90,21 +90,21 @@ export interface IconButtonProps
     ButtonTooltipProps,
     ActiveProps,
     ToneProps {
-  /** Доступное имя кнопки. */
+  /** Accessible name of the button. */
   label?: string
-  /** Тултип кнопки; по умолчанию — её доступное имя. */
+  /** Button tooltip; its accessible name by default. */
   tooltip?: string
-  /** `ghost` — прозрачная; `overlay` — непрозрачный чип поверх контента (действия строки). */
+  /** `ghost` — transparent; `overlay` — an opaque chip over content (row actions). */
   variant?: 'ghost' | 'overlay'
-  /** Форма: `circle` — круг (кнопки шапки, ячейки, строки), `square` — скруглённый квадрат (панели). */
+  /** Shape: `circle` (header, cell and row buttons), `square` — a rounded square (panels). */
   shape?: 'circle' | 'square'
-  /** Размер: `compact` — `--tsr-comp-button-size-compact` (ручки перетаскивания). */
+  /** Size: `compact` — `--tsr-comp-button-size-compact` (drag handles). */
   size?: 'default' | 'compact'
-  /** Выключенная остаётся в порядке фокуса (`aria-disabled`) — Base UI Button. */
+  /** A disabled button stays in the focus order (`aria-disabled`) — Base UI Button. */
   focusableWhenDisabled?: boolean
-  /** Свой элемент вместо кнопки (напр. `<Popover.Trigger />`) — рендер-проп Base UI. */
+  /** A custom element instead of the button (for example `<Popover.Trigger />`) — a Base UI render prop. */
   render?: ReactElement
-  /** Класс, применяемый в выключенном состоянии */
+  /** Class applied in the disabled state */
   disabledClassName?: string
   children?: ReactNode
 }
@@ -140,10 +140,9 @@ export const SimpleIconButton = ({
 }
 
 /**
- * Кнопка-иконка кита (ADR 0098) на базе Base UI Button: сторона
- * `--tsr-comp-button-size`, иконка `--tsr-comp-button-icon-size`, форма `circle` или
- * `square`, палитра — общая с `Button`; `label` — доступное имя и тултип. Производные
- * кнопки собираются из неё.
+ * The kit's icon button (ADR 0098) built on Base UI Button: side `--tsr-comp-button-size`, icon
+ * `--tsr-comp-button-icon-size`, shape `circle` or `square`, palette shared with `Button`;
+ * `label` is the accessible name and the tooltip. Derived buttons are built from it.
  */
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
   (

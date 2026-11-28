@@ -7,7 +7,7 @@ export const GRID_BUTTON_SIZE_VAR = '--tsr-comp-grid-button-size'
 
 export const ACTION_COLUMN_CONTENT_PADDING = 4
 
-/** Ширина колонки контрола при теме по умолчанию; свою тему грид замеряет. */
+/** Width of a control column with the default theme; the grid measures a custom theme. */
 export const COLUMN_ACTIONS_SIZE =
   ACTION_BUTTON_DEFAULT_SIZE + ACTION_COLUMN_CONTENT_PADDING * 2
 
@@ -16,8 +16,8 @@ export const controlColumnSize = (buttonSize: number) =>
   buttonSize + ACTION_COLUMN_CONTENT_PADDING * 2
 
 /**
- * Функция получение идентификатора для колонки действий.
- * Колонка действий не подчиняется поведению и стилизации, нежели пользовательские колонки.
+ * Returns the id of the actions column.
+ * The actions column doesn't follow the behavior and styling of user columns.
  */
 export const getActionColumnId = (columnId: string) =>
   `${COLUMN_ACTIONS_PREFIX}__${columnId}`

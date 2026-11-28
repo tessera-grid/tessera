@@ -114,15 +114,15 @@ const stripUndefined = <T extends object>(slice: T): Partial<T> => {
   return out as Partial<T>
 }
 
-/** Компоненты сервисной колонки с подмешанными каналами плагина — для `make`. */
+/** Service column components with the plugin's channels mixed in — for `make`. */
 export interface ServiceColumnParts {
   cell?: (ctx: CellComponentProps) => ReactNode
   header?: (ctx: HeaderComponentProps) => ReactNode
 }
 
 /**
- * Сервисная колонка в `definePlugin`: `cell`/`header` типизированы по `hooks`
- * плагина и получают их без scope-строки (ADR 0028, DP19, DP20).
+ * A service column in `definePlugin`: `cell`/`header` are typed by the plugin's `hooks` and
+ * receive them without a scope string (ADR 0028, DP19, DP20).
  */
 export interface PluginServiceColumn<THooks, TOptions = never> extends Omit<
   ServiceColumn,
@@ -132,8 +132,8 @@ export interface PluginServiceColumn<THooks, TOptions = never> extends Omit<
   header?: (props: PluginHeaderProps<THooks>) => ReactNode
   make: (parts: ServiceColumnParts) => ColumnDef<any, any, any>
   /**
-   * Когда колонка нужна (ADR 0050); без поля — всегда. Приложение переопределяет
-   * опцией фабрики `column: 'always'`.
+   * When the column is needed (ADR 0050); without the field — always. The application
+   * overrides it with the factory option `column: 'always'`.
    */
   presence?: ServicePresence<TOptions>
 }
@@ -161,118 +161,118 @@ const toServiceColumn = (
   }
 }
 
-interface DefinePluginConfig<
+export interface DefinePluginConfig<
   TOptions extends { enabled?: boolean },
   TFeatures extends object,
   TResolved extends Record<string, unknown>,
   THooks extends object,
   TState,
 > {
-  /** Идентификатор плагина; служит и ключом scope для hook-слайса и локального state. */
+  /** Plugin id; also the scope key for the hooks slice and local state. */
   id: string
-  /** Фрагмент стоковых фич TanStack v9 (→ `tableFeatures`). */
+  /** A fragment of TanStack v9 stock features (→ `tableFeatures`). */
   features?: TFeatures
   /**
-   * Резолвнутые опции таблицы (→ опции useTable). Живые (ADR 0039): ядро пересобирает
-   * их при смене значения аргументов, функции из аргументов приходят стабильными.
+   * Resolved table options (→ `useTable` options). Live (ADR 0039): the core rebuilds them
+   * when argument values change; functions from arguments arrive stable.
    */
   options?: (opts: TOptions) => TResolved
   /**
-   * Аргументы-договоры на время жизни таблицы (ADR 0039): значение берётся с момента
-   * монтирования, смена на лету не применяется и сопровождается dev-warn.
+   * Arguments fixed for the table's lifetime (ADR 0039): the value is taken at mount, a
+   * change later is not applied and triggers a dev warning.
    */
   lifetime?: readonly Extract<keyof TOptions, string>[]
   /**
-   * Аргументы-функции, влияющие на отрисовку (предикаты): новая ссылка на функцию
-   * перерисовывает ячейки (ADR 0039). Колбэки `on*` сюда не входят.
+   * Function arguments that affect rendering (predicates): a new function reference
+   * re-renders cells (ADR 0039). `on*` callbacks are not included.
    */
   refreshOn?: readonly Extract<keyof TOptions, string>[]
-  /** Живой слайс бизнес-колбэков; undefined-ключи отбрасываются. */
+  /** Live slice of business callbacks; `undefined` keys are dropped. */
   hooks?: (opts: TOptions) => THooks
   /**
-   * Сужение срезов состояния аргументами (ADR 0039, §4): «сохранённое → допустимое»
-   * по ключу среза; ядро отдаёт TanStack эффективное, не переписывая сохранённое. Итог
-   * с теми же полями от того же значения ядро заменяет прежним объектом (ADR 0171, §1).
+   * Narrows state slices by arguments (ADR 0039, §4): "stored → allowed" per slice key; the
+   * core gives TanStack the effective value without rewriting the stored one. A result with the
+   * same fields from the same value is replaced by the previous object (ADR 0171, §1).
    */
   narrow?: (opts: TOptions) => Record<string, NarrowState> | undefined
   /**
-   * Дефолт ЛОКАЛЬНОГО состояния плагина (значение слайса). definePlugin генерирует
-   * v9-фичу, seed'ящую слайс под ключом `plugin:<id>`; слот с `state: true` читает и
-   * пишет его пропсом `state: [value, setter]`.
+   * Default of the plugin's LOCAL state (the slice value). `definePlugin` generates a v9
+   * feature that seeds the slice under `plugin:<id>`; a slot with `state: true` reads and
+   * writes it through the `state: [value, setter]` prop.
    */
   state?: () => TState
   /**
-   * Имя локального среза в аргументах (ADR 0171, §4): плагин принимает `<имя>`,
-   * `on<Имя>Change` и `initial<Имя>`, как срезы TanStack. С `<имя>` срезом владеет
-   * приложение: изменение изнутри приходит колбэку, видно — с новым значением.
+   * Name of the local slice in arguments (ADR 0171, §4): the plugin accepts `<name>`,
+   * `on<Name>Change` and `initial<Name>`, like TanStack slices. With `<name>` the application
+   * owns the slice: a change from inside goes to the callback and shows with the new value.
    */
   stateName?: Extract<keyof TOptions, string>
   /**
-   * Срезы TanStack, которые плагин принимает аргументами `<срез>`, `on<Срез>Change` и
-   * `initial<Срез>` (ADR 0120, §4).
+   * TanStack slices the plugin accepts as arguments `<slice>`, `on<Slice>Change` and
+   * `initial<Slice>` (ADR 0120, §4).
    */
   slices?: readonly Extract<keyof TOptions, string>[]
   /**
-   * Модель, которую включает плагин интерфейса (ADR 0120, §3): её фабрика и аргументы,
-   * которые интерфейс ей передаёт; `enabled` передаётся всегда.
+   * The model an interface plugin enables (ADR 0120, §3): its factory and the arguments the
+   * interface passes to it; `enabled` is always passed.
    */
   model?: {
     plugin: (opts?: any) => TesseraFeatureEntry
     keys: readonly Extract<keyof TOptions, string>[]
   }
-  /** Сервисная колонка плагина; `cell`/`header` получают его `hooks` (DP19). */
+  /** The plugin's service column; `cell`/`header` receive its `hooks` (DP19). */
   column?: PluginServiceColumn<THooks, TOptions>
   /**
-   * Декларативные слоты плагина; функция — набор слотов зависит от аргументов фабрики.
-   * Компонент получает каналы плагина (`hooks`, локальный `state`) с типами из
-   * деклараций этого же вызова: расхождение — ошибка компиляции (DP7).
+   * The plugin's declarative slots; a function when the slot set depends on factory arguments.
+   * The component gets the plugin's channels (`hooks`, local `state`) typed from the
+   * declarations of the same call: a mismatch is a compile error (DP7).
    */
   slots?:
     | PluginSlotDecl<THooks, NoInfer<TState>>[]
     | ((opts: TOptions) => PluginSlotDecl<THooks, NoInfer<TState>>[])
-  /** Декларативные действия слота (инлайн-кнопка / пункт кебаб-меню). */
+  /** Declarative slot actions (an inline button or a kebab-menu item). */
   slotActions?: SlotAction[]
-  /** Заглушки пустой таблицы плагина — записи реестра (ADR 0123, ES14). */
+  /** The plugin's empty-table stubs — registry entries (ADR 0123, ES14). */
   stubs?: StubEntry[]
-  /** Виды черновиков плагина: как применить, отбросить и подписать (ADR 0178, §1). */
+  /** The plugin's draft kinds: how to apply, discard and label them (ADR 0178, §1). */
   draftKinds?: DraftKind[]
   /**
-   * Наборы подписей плагина (ADR 0182, §8): `defineLabels` с id плагина — ключи словаря
-   * таблицы `<id>.<ключ>`, приложение переводит их через `localization`; и наборы общих
-   * модулей, которые плагин рисует.
+   * The plugin's label sets (ADR 0182, §8): `defineLabels` with the plugin id — table dictionary
+   * keys `<id>.<key>` that the application translates through `localization`; and label sets of
+   * shared modules the plugin renders.
    */
   labels?: readonly LabelSet[]
   /**
-   * Действия плагина в справочнике (ADR 0182, §1): имя → подпись; одно имя действия для меню,
-   * журнала, пульта, объявлений и канала действий.
+   * The plugin's actions in the catalog (ADR 0182, §1): name → label; one action name for the
+   * menu, the failure log, the unsaved-changes panel, announcements and the debug-action channel.
    */
   actions?: ActionLabels
-  /** Декларативные пункты контекстного меню (ADR 0030). */
+  /** Declarative context-menu items (ADR 0030). */
   contextMenuActions?: ContextMenuAction[]
-  /** Клавиатурные действия на ячейках (ADR 0021). */
+  /** Keyboard actions on cells (ADR 0021). */
   keyboardActions?: KeyboardAction[]
-  /** Что плагин делает с данными по колонке и как это снять (ADR 0204, §2). */
+  /** What the plugin does to the data per column and how to remove it (ADR 0204, §2). */
   columnTransforms?: ColumnTransform[]
-  /** Разделы «Настроек вида»: короткое значение, уровни или своя панель (ADR 0215, §5). */
+  /** "View settings" sections: a short value, levels or a custom panel (ADR 0215, §5). */
   viewSettingsSections?: ViewSettingsSection[]
-  /** Декларация плагина-меню (зависит от opts): на какие слоты распространить кебаб. */
+  /** A menu plugin's declaration (depends on options): which slots get the kebab menu. */
   actionMenu?: (opts: TOptions) => ActionMenuDeclaration
-  /** Причина инертности для `table.getPluginDiagnostics()`; `undefined` — плагин работает. */
+  /** Inert reason for `table.getPluginDiagnostics()`; `undefined` means the plugin works. */
   diagnose?: PluginDiagnose
   /**
-   * Императивный сетап после создания таблицы (фабрика от opts → эффект над table;
-   * может вернуть cleanup). Через opts сетап видит аргументы фабрики.
+   * Imperative setup after the table is created (a factory from options → an effect on the
+   * table; may return a cleanup). Through options the setup sees the factory arguments.
    */
   setup?: (opts: TOptions) => (table: unknown) => void | (() => void)
   /**
-   * Согласование состояния плагина с таблицей после каждого рендера — и у
-   * выключенного плагина (ADR 0040, §2). Должно быть дешёвым без работы.
+   * Reconciles plugin state with the table after every render — also for a disabled plugin
+   * (ADR 0040, §2). Must be cheap when there is nothing to do.
    */
   reconcile?: (table: unknown, context: PluginReconcileContext) => void
   /**
-   * Вклад в тело грида (ADR 0173): атрибуты и переменные стиля ячейки и строки по выбору
-   * из состояния, атрибуты, события и хук корня, клавиши навигации. Имена — только
-   * `data-<id>-*`, `aria-*` и `--<id>-*`; исключение выключает вклад.
+   * Contribution to the grid body (ADR 0173): cell and row attributes and style variables
+   * selected from state, root attributes, events and hook, navigation keys. Names are only
+   * `data-<id>-*`, `aria-*` and `--<id>-*`; an exception disables the contribution.
    */
   body?: (opts: TOptions) => PluginBody
 }
@@ -285,9 +285,10 @@ interface DefinePluginConfig<
  * отсюда явный дженерик первым шагом.
  */
 /**
- * Вторая ступень `definePlugin`. Две сигнатуры, чтобы тип хуков слот-компонента
- * шёл от плагина: без `hooks` он пустой (компонент, ждущий хуки, — ошибка), с
- * `hooks` — выведен из их декларации и из компонентов, и расхождение не сходится (DP7).
+ * The second step of `definePlugin`. Two signatures, so the slot component's hooks type comes
+ * from the plugin: without `hooks` it is empty (a component expecting hooks is an error), with
+ * `hooks` it is inferred from their declaration and from the components, and a mismatch fails
+ * (DP7).
  */
 export interface PluginFactoryBuilder<TOptions extends { enabled?: boolean }> {
   <

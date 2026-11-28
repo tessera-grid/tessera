@@ -39,16 +39,16 @@ export interface ColumnFilteringOptions extends Omit<
   ColumnFilteringModelOptions,
   'enabled'
 > {
-  /** `false` — плагин отключён: фильтры колонок не применяются. */
+  /** `false` disables the plugin: column filters are not applied. */
   enabled?: boolean
-  /** Задержка применения ввода в панели фильтра, мс (по умолчанию 200). */
+  /** Delay before applying input in the filter panel, ms (200 by default). */
   debounceMs?: number
-  /** «Показано N из M» в нижней панели при активном фильтре (по умолчанию нет). */
+  /** "Showing N of M" in the status bar while a filter is active (off by default). */
   filteredCount?: boolean
   /**
-   * Бизнес-колбэк: пользователь изменил фильтры колонок (после дебаунса). Фильтры на
-   * сервере (`dataMode`, ADR 0169) — промис запроса данных: грид ждёт, отказ отмечает
-   * фильтр (ADR 0116).
+   * Business callback: the user changed column filters (after the debounce). With filters on the
+   * server (`dataMode`, ADR 0169) — a promise of the data request: the grid waits, a rejection
+   * marks the filter (ADR 0116).
    */
   onFilterChange?: FilterChangeHook
 }

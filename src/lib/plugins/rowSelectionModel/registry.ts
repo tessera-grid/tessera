@@ -38,22 +38,22 @@ import {
 import { rowSelectionModelLabels } from './labels'
 
 export interface RowSelectionModelOptions {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
   /**
-   * Флажки у вложенных строк (ADR 0162): `true` — с каскадом на поддерево, `'self'` — каждая
-   * строка выбирается сама; без него — флажки только у строк верхнего уровня.
+   * Checkboxes on nested rows (ADR 0162): `true` — cascading to the subtree, `'self'` — each row is
+   * selected on its own; without it — checkboxes only on top-level rows.
    */
   subRows?: boolean | 'self'
   /**
-   * Выбранные строки по `id` или «всё, кроме» `{ all, except, groups?, branches? }` серверной
-   * модели строк (ADR 0138, §9; ADR 0148; ADR 0162): задаёт приложение; без него срез хранит
-   * грид.
+   * Selected rows by `id`, or "all except" `{ all, except, groups?, branches? }` of the server row
+   * model (ADR 0138, §9; ADR 0148; ADR 0162), set by the application; without it the grid keeps
+   * the slice.
    */
   rowSelection?: RowSelectionValue
-  /** Новое значение среза после каждого изменения изнутри грида. */
+  /** New slice value after each change from inside the grid. */
   onRowSelectionChange?: (next: RowSelectionValue) => void
-  /** Начальное значение среза, которым владеет грид. */
+  /** Initial value of the slice the grid owns. */
   initialRowSelection?: RowSelectionValue
 }
 
@@ -67,8 +67,8 @@ declare module '@tanstack/react-table' {
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
 /**
- * Клиентская строка-группа не в срезе (ADR 0185, §1): выбрана ли она, скажут её листья. Заливка,
- * `aria-selected` и флажок читают обычные методы строки.
+ * A client group row isn't in the slice (ADR 0185, §1): its leaves tell whether it's selected. The
+ * fill, `aria-selected` and the checkbox read the regular row methods.
  */
 const rowGroupSelectionFeature: TableFeature = {
   assignRowPrototype: (prototype, table) => {

@@ -2,17 +2,17 @@
 import { defineLabels } from '../../core/localization'
 
 export interface InfiniteScrollLabels {
-  /** Счётчик загруженных строк в нижней панели (`infiniteScroll({ loadedCount })`): итог неизвестен и известен */
+  /** Loaded row counter in the status bar (`infiniteScroll({ loadedCount })`): total unknown and known */
   loadedRows: (count: number) => string
   loadedRowsOf: (count: number, total: number) => string
-  /** Короткие формы счётчиков в узкой нижней панели (ADR 0083, TX6); не обрезаются */
+  /** Short counter forms in a narrow status bar (ADR 0083, TX6); never truncated */
   loadedRowsShort: (count: number) => string
   loadedRowsOfShort: (count: number, total: number) => string
-  /** Строка ошибки догрузки (ADR 0081): текст и кнопка повтора */
+  /** Load-more error row (ADR 0081): text and the retry button */
   loadMoreFailed: string
-  /** Объявление прихода блока догрузки */
+  /** Announcement that a load-more block arrived */
   announceMoreLoaded: (count: number) => string
-  /** Действие: загрузить порцию строк */
+  /** Action: load a batch of rows */
   actionLoadMore: string
 }
 

@@ -16,7 +16,7 @@ import { unsavedChangesLabels } from './labels'
 export const UNSAVED_CHANGES_TOOLBAR_GROUP = 'drafts'
 
 export interface UnsavedChangesOptions extends ToolbarPlacementOption {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
 }
 

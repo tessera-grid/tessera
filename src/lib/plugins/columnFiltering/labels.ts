@@ -2,27 +2,27 @@
 import { defineLabels } from '../../core/localization'
 
 export interface ColumnFilteringLabels {
-  /** Вид преобразования в перечне меню «Колонки» (ADR 0204) */
+  /** Transform kind in the list of the "Columns" menu (ADR 0204) */
   transformName: string
-  /** Фильтр скрытой колонки — в доступном имени её пункта */
+  /** Filter of a hidden column — in the accessible name of its item */
   transformDescription: string
-  /** Кнопка фильтра в заголовке и подпись панели фильтра (`columnFiltering`) */
+  /** Filter button in the header and the filter panel's label (`columnFiltering`) */
   filter: string
-  /** Доступное имя кнопки фильтра при активном фильтре колонки */
+  /** Accessible name of the filter button when the column filter is active */
   filterActive: string
-  /** Поле выбора условия в панели фильтра */
+  /** Condition select in the filter panel */
   filterCondition: string
-  /** Поле значения в панели фильтра */
+  /** Value field in the filter panel */
   filterValue: string
-  /** Нижняя граница условия «между» */
+  /** Lower bound of the "between" condition */
   filterFrom: string
-  /** Верхняя граница условия «между» */
+  /** Upper bound of the "between" condition */
   filterTo: string
-  /** Кнопка сброса фильтра колонки */
+  /** Button that clears the column filter */
   filterReset: string
-  /** Кнопка панели фильтра в серверном режиме: отправить условие (ADR 0154) */
+  /** Filter panel button in server mode: submit the condition (ADR 0154) */
   filterApply: string
-  /** Ошибка поля числа: ввод не разбирается как число */
+  /** Number field error: the input doesn't parse as a number */
   filterInvalidNumber: string
   filterContains: string
   filterEquals: string
@@ -36,11 +36,11 @@ export interface ColumnFilteringLabels {
   filterBetween: string
   filterEmpty: string
   filterNotEmpty: string
-  /** Булев фильтр: без фильтра */
+  /** Boolean filter: no filter */
   filterAll: string
   filterYes: string
   filterNo: string
-  /** Фильтр дат (ADR 0047): условия, пресеты, поле времени, листание месяцев */
+  /** Date filter (ADR 0047): conditions, presets, time field, month paging */
   filterOn: string
   filterBefore: string
   filterAfter: string
@@ -54,7 +54,7 @@ export interface ColumnFilteringLabels {
   filterTime: string
   filterTimeFrom: string
   filterTimeTo: string
-  /** Фильтр вариантов (ADR 0048): условия, чек-лист, загрузка справочника */
+  /** Option filter (ADR 0048): conditions, checklist, lookup loading */
   filterAnyOf: string
   filterAllOf: string
   filterNoneOf: string
@@ -65,20 +65,20 @@ export interface ColumnFilteringLabels {
   filterLoadingOptions: string
   filterOptionsError: string
   filterRetry: string
-  /** Черновик фильтра, который снимает условие. */
+  /** A filter draft that removes the condition. */
   draftNoFilter: string
   /**
-   * Кнопка-сводка фильтров в тулбаре: тултип и доступное имя — без активных фильтров, с
-   * активными (`count`) и с активными на скрытых колонках (`hidden`)
+   * Filter summary button in the toolbar: tooltip and accessible name — with no active filters,
+   * with active ones (`count`) and with active ones on hidden columns (`hidden`)
    */
   filters: string
-  /** Кнопка сброса одного фильтра в сводке */
+  /** Button that clears one filter in the summary */
   removeFilter: (column: string) => string
-  /** Действие: задать фильтры колонок */
+  /** Action: set column filters */
   actionSetFilters: string
-  /** Действие: снять фильтр колонки */
+  /** Action: remove a column filter */
   actionRemoveFilter: string
-  /** Действие: снять все фильтры */
+  /** Action: remove all filters */
   actionClearFilters: string
 }
 

@@ -8,8 +8,8 @@ import type {
 
 export interface ColumnSortingHooks {
   /**
-   * Пользователь сменил сортировку колонки. В серверном режиме промис — запрос данных
-   * под неё: грид ждёт, отказ откатывает сортировку (ADR 0116).
+   * The user changed a column's sort. In server mode a promise is the data request for it: the
+   * grid waits, a rejection reverts the sort (ADR 0116).
    */
   onToggleColumnSort: (
     id: string,

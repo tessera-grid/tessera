@@ -20,11 +20,11 @@ import type { ColumnPinningHooks } from './types'
 import { columnPinningLabels } from './labels'
 
 export interface ColumnPinningOptions {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
-  /** Режим reorder-out: закрепление любой единицы под вложенной шапкой. */
+  /** Reorder-out mode: pin any unit under a nested header. */
   leafPinning?: boolean
-  /** Бизнес-колбэк закрепления (аргумент фабрики); читается живо. */
+  /** Pinning business callback (a factory argument); read live. */
   onTogglePin?: ColumnPinningHooks['onTogglePin']
 }
 

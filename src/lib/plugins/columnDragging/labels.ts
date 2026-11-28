@@ -2,20 +2,20 @@
 import { defineLabels } from '../../core/localization'
 
 export interface ColumnDraggingLabels {
-  /** Текст отказа переноса колонки, если сервер не прислал свой (ADR 0114) */
+  /** Refusal text of a column move when the server sent none (ADR 0114) */
   moveColumnFailed: string
-  /** Объявление отказа переноса колонки */
+  /** Announcement that a column move was refused */
   announceColumnMoveFailed: (error: string) => string
-  /** Доступные имена ручек перетаскивания — кнопок меню перестановки */
+  /** Accessible names of drag handles — the reorder menu buttons */
   moveColumn: string
-  /** Пункты меню ручки колонки */
+  /** Column handle menu items */
   moveLeft: string
   moveRight: string
-  /** Действие: отмена переноса колонки */
+  /** Action: cancel a column move */
   actionDragCancel: string
-  /** Действие: бросок колонки */
+  /** Action: drop a column */
   actionDrop: string
-  /** Действие: пункт меню ручки колонки */
+  /** Action: a column handle menu item */
   actionHandleMenu: string
 }
 

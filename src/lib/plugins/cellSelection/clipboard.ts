@@ -18,9 +18,8 @@ const escapeHtml = (text: string): string =>
   text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
 /**
- * Регионы выделения (`getSelectedCellRangesData()` → `[регион][строка][колонка]`)
- * в TSV: колонки — таб, строки — перевод строки, непересекающиеся регионы —
- * пустая строка между ними.
+ * Selection regions (`getSelectedCellRangesData()` → `[region][row][column]`) as TSV: columns
+ * separated by tabs, rows by newlines, disjoint regions by an empty line.
  */
 export const cellRangesToTsv = (regions: unknown[][][]): string =>
   regions
@@ -31,7 +30,7 @@ export const cellRangesToTsv = (regions: unknown[][][]): string =>
     )
     .join('\n\n')
 
-/** Те же регионы как HTML-таблицы (rich-paste в Excel/Sheets). */
+/** The same regions as HTML tables (rich paste into Excel or Sheets). */
 export const cellRangesToHtml = (regions: unknown[][][]): string =>
   regions
     .map(
@@ -141,7 +140,7 @@ export const tesseraFormatToValues = (
   }
 }
 
-/** Есть ли в регионах хоть одна ячейка (пустой массив/пустые регионы → нет). */
+/** Whether the regions contain at least one cell (an empty array or empty regions → no). */
 export const hasSelectedCells = (regions: unknown[][][]): boolean =>
   regions.some(region => region.some(row => row.length > 0))
 

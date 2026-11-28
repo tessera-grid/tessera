@@ -7,178 +7,178 @@ import type { CellWriteSource } from '../../core/cellWrites'
 import type { CellEditHook } from '../../shared/cellHooks'
 
 /**
- * Сессия правки (ADR 0040, §2): ячейка, черновик и значение на начало. Живёт в
- * срезе плагина и переживает размонтирование редактора.
+ * An edit session (ADR 0040, §2): the cell, the draft and the value at the start. It lives in
+ * the plugin's slice and survives the editor unmounting.
  */
 export interface EditSession {
   cell: { rowId: string; columnId: string }
   /**
-   * Черновик в типе колонки (ADR 0175, §1); `undefined` — набранный текст в тип не
-   * разбирается.
+   * Draft in the column type (ADR 0175, §1); `undefined` — the typed text doesn't parse into
+   * the type.
    */
   draft: unknown
-  /** Черновик текстом: набранное в поле, на старте — значение по языку таблицы. */
+  /** Draft as text: what's typed in the field; at the start — the value in the table's language. */
   text: string
-  /** Значение ячейки на начало правки. */
+  /** Cell value at the start of the edit. */
   original: unknown
-  /** Правка открыта из «ошибки»: текст отказа сервера (ADR 0041). */
+  /** The edit was opened from an error: the server's refusal text (ADR 0041). */
   rejected?: { error: string }
-  /** Текст ошибки последнего сохранения: `validate` или разбор по типу. */
+  /** Error text of the last save: `validate` or type parsing. */
   invalid?: string
 }
 
-/** Активная сессия правки или null. */
+/** The active edit session or null. */
 export type EditingCell = EditSession | null
 
 /**
- * Отправленная ячейка (ADR 0041, §2): сохранение ждёт промиса `onCellEdit` или
- * отклонено. Отделена от активной правки — править другие ячейки можно сразу.
+ * A submitted cell (ADR 0041, §2): the save waits for the `onCellEdit` promise or was rejected.
+ * Separate from the active edit — other cells can be edited right away.
  */
 export interface SubmittedCell {
   rowId: string
   columnId: string
-  /** Отправленное значение в типе колонки. */
+  /** The submitted value in the column type. */
   draft: unknown
-  /** Отправленное значение текстом. */
+  /** The submitted value as text. */
   text: string
   original: unknown
   status: 'pending' | 'error'
-  /** Текст отказа сервера (для `error`). */
+  /** The server's refusal text (for `error`). */
   error?: string
-  /** Номер отправки: поздний итог прежней отправки игнорируется. */
+  /** Submission number: a late result of an earlier submission is ignored. */
   attempt: number
-  /** Применение или операция записи, в которой отказ пришёл (ADR 0227, §3). */
+  /** The apply or write operation in which the refusal arrived (ADR 0227, §3). */
   batch?: string
 }
 
 /**
- * Итог последнего применения черновиков (ADR 0227, §1): по нему плашка. Новое применение
- * заменяет запись.
+ * Outcome of the last draft apply (ADR 0227, §1): the alert follows it. A new apply replaces
+ * the entry.
  */
 export interface ApplyOutcome {
-  /** Id применения — тот же `batch` у его отказов. */
+  /** Apply id — the same `batch` as on its failures. */
   id: string
-  /** Сохранено правок ячеек и строк. */
+  /** Cell and row edits saved. */
   saved: number
-  /** Не сохранено. */
+  /** Not saved. */
   refused: number
-  /** Запрос не прошёл целиком: причина; `refused` — все правки применения. */
+  /** The whole request failed: the reason; `refused` — all edits of the apply. */
   failed?: { reason: string }
   /**
-   * Применить несохранённое ещё раз одним вызовом `onCommitEdits`: при отказе целиком — тот же
-   * набор, иначе отказанные. Нечего повторять — поля нет.
+   * Applies the unsaved changes again in one `onCommitEdits` call: after a whole-request failure —
+   * the same set, otherwise the refused ones. Nothing to retry — no field.
    */
   retry?: () => void
 }
 
 /**
- * Пакет операции записи, ждущий ответа (ADR 0219, §10): одна запись на пакет со словарём ячеек
- * по ключу ячейки — смена ожидания не переписывает срез по записи на ячейку.
+ * A write operation batch waiting for an answer (ADR 0219, §10): one entry per batch with a map
+ * of cells by cell key, so a pending change doesn't rewrite the slice entry per cell.
  */
 export interface PendingPackage {
   id: string
   cells: ReadonlyMap<string, SubmittedCell>
 }
 
-/** Срез плагина: активная правка, отправленные ячейки по ключу ячейки и ждущие пакеты. */
+/** The plugin's slice: the active edit, submitted cells by cell key, and pending batches. */
 export interface CellEditingState {
   active: EditingCell
   submitted: Record<string, SubmittedCell>
   packages?: Readonly<Record<string, PendingPackage>>
-  /** Итог последнего применения черновиков, пока плашку не закрыли (ADR 0227, §1). */
+  /** Outcome of the last draft apply, until the alert is closed (ADR 0227, §1). */
   applied?: ApplyOutcome
 }
 
-/** Данные коммита нового значения ячейки. */
+/** Data for committing a new cell value. */
 export interface CellEditCommit {
   rowId: string
   columnId: string
-  /** Новое значение в типе колонки: число, `Date`, запись, массив (ADR 0175, ED1). */
+  /** New value in the column type: a number, `Date`, record, array (ADR 0175, ED1). */
   value: unknown
-  /** Набранный текст; у редактора без поля — текст значения по языку таблицы. */
+  /** The typed text; for an editor without a field — the value's text in the table's language. */
   text: string
-  /** Значение ячейки на начало правки. */
+  /** Cell value at the start of the edit. */
   original: unknown
-  /** Значение сейчас — есть, только если оно изменилось извне во время правки. */
+  /** The current value — present only if it changed from outside during the edit. */
   current?: unknown
 }
 
-/** Причина завершения правки без сохранения (ADR 0040, §1). */
+/** Why an edit ended without saving (ADR 0040, §1). */
 export type EditCancelReason = SessionCancelReason | 'conflict'
 
-/** Данные правки, завершённой без сохранения. */
+/** Data of an edit that ended without saving. */
 export interface CellEditCancel {
   rowId: string
   columnId: string
   reason: EditCancelReason
-  /** Черновик в типе колонки — не теряется молча; `undefined` — текст не разбирается. */
+  /** Draft in the column type — never lost silently; `undefined` — the text doesn't parse. */
   draft: unknown
-  /** Черновик текстом. */
+  /** Draft as text. */
   text: string
-  /** Значение ячейки на начало правки. */
+  /** Cell value at the start of the edit. */
   original: unknown
-  /** Значение сейчас — для `conflict`. */
+  /** The current value — for `conflict`. */
   current?: unknown
-  /** Текст отказа сервера — черновик был отклонён (ADR 0041). */
+  /** The server's refusal text — the draft was rejected (ADR 0041). */
   error?: string
 }
 
-/** Что получает редактор ячейки (ADR 0175, §3). */
+/** What a cell editor receives (ADR 0175, §3). */
 export interface CellEditorProps {
-  /** Черновик в типе колонки: на старте — значение ячейки; переживает прокрутку. */
+  /** Draft in the column type: at the start — the cell value; survives scrolling. */
   value: unknown
-  /** Черновик текстом: на старте — значение по языку таблицы. */
+  /** Draft as text: at the start — the value in the table's language. */
   text: string
-  /** Доступное имя поля (`localization.editCellValue` с именем колонки). */
+  /** Accessible name of the field (`localization.editCellValue` with the column name). */
   label: string
-  /** Текст ошибки `validate` или разбора; поле — `aria-invalid` и связанный текст ошибки. */
+  /** Error text from `validate` or parsing; the field gets `aria-invalid` and the linked error text. */
   error?: string
-  /** Сохранить значение в типе колонки. */
+  /** Saves a value in the column type. */
   commit: (value: unknown) => void
-  /** Сохранить набранный текст: его разбирает тип колонки, не разобрался — ошибка поля. */
+  /** Saves the typed text: the column type parses it; if it doesn't parse — a field error. */
   commitText: (text: string) => void
   cancel: () => void
-  /** Сообщить черновик в типе колонки: он живёт в срезе и уходит в `onEditCancel`. */
+  /** Reports a draft in the column type: it lives in the slice and goes to `onEditCancel`. */
   setDraft: (value: unknown) => void
-  /** Сообщить набранный текст. */
+  /** Reports the typed text. */
   setText: (text: string) => void
   cell: CellComponentProps
 }
 
 /**
- * Рендер редактора ячейки (BYO — со своей дизайн-системой). Не задан у колонки, типа и
- * плагина — встроенный по базовому типу колонки.
+ * Renders a cell editor (bring your own, with your design system). When the column, its type
+ * and the plugin don't set one — the built-in editor for the column's base type.
  */
 export type CellEditor = (props: CellEditorProps) => ReactNode
 
-/** Правка одной ячейки в пакете сохранения (ADR 0178, §5). */
+/** An edit of one cell in a save batch (ADR 0178, §5). */
 export interface CellEditBatchItem {
   rowId: string
   columnId: string
-  /** Значение в типе колонки. */
+  /** Value in the column type. */
   value: unknown
-  /** Набранный текст. */
+  /** The typed text. */
   text: string
-  /** Значение в данных сейчас. */
+  /** The value currently in the data. */
   original: unknown
 }
 
-/** Новая строка в пакете (ADR 0178, §7): временный id, значения и место. */
+/** A new row in the batch (ADR 0178, §7): a temporary id, values and a place. */
 export interface RowInsertBatchItem {
-  /** Временный id: по нему ответ возвращает сохранённую строку и отказы. */
+  /** Temporary id: the answer returns the saved row and failures by it. */
   rowId: string
   values: Record<string, unknown>
-  /** Место в видимом списке. */
+  /** Place in the visible list. */
   index: number
-  /** Строка над новой; нет — новая первая. */
+  /** The row above the new one; none — the new row is first. */
   after?: string
 }
 
-/** Пакет сохранения: правки ячеек, новые и удалённые строки. */
+/** A save batch: cell edits, new and removed rows. */
 export interface CellEditBatch {
-  /** Id операции записи в ячейки — вставки, очистки, массовой правки (ADR 0219, §6). */
+  /** Id of the cell write operation — a paste, clear, bulk edit (ADR 0219, §6). */
   id?: string
-  /** Откуда операция; нет — «Применить» черновиков (ADR 0178). */
+  /** Where the operation came from; none — "Apply" of drafts (ADR 0178). */
   source?: CellWriteSource
   cells: readonly CellEditBatchItem[]
   inserts?: readonly RowInsertBatchItem[]
@@ -186,54 +186,53 @@ export interface CellEditBatch {
 }
 
 /**
- * Ответ на пакет: отказы с причиной — по ячейке или, без `columnId`, по строке; остальное
- * сохранено. `saved` — сохранённые новые строки по временному id.
+ * Answer to a batch: refusals with a reason — per cell or, without `columnId`, per row; the rest
+ * is saved. `saved` — saved new rows by temporary id.
  */
 export interface CellEditBatchResult {
   refused?: readonly { rowId: string; columnId?: string; reason: string }[]
   saved?: readonly { rowId: string; row: unknown }[]
 }
 
-/** `canEditCell` — условие показа кнопки редактирования по контексту ячейки. */
+/** `canEditCell` — whether to show the edit button for a cell context. */
 export interface CellEditingHooks extends CellEditHook {
   /**
-   * Коммит нового значения ячейки. Промис — сохранение с ожиданием: ячейка ждёт
-   * его итога, не блокируя правку других (ADR 0041). Сохранённая строка в ответе —
-   * сразу или промисом — ложится в кэш серверной модели строк (ADR 0139). `signal`
-   * прерывается, когда человек отменил ждущее сохранение (ADR 0177, §8).
+   * Commits a new cell value. A promise is a save with a pending state: the cell waits for its
+   * outcome without blocking edits of other cells (ADR 0041). A saved row in the answer — right
+   * away or as a promise — goes into the server row model cache (ADR 0139). `signal` is aborted
+   * when the user cancels the pending save (ADR 0177, §8).
    */
   onCellEdit: (
     commit: CellEditCommit,
     context: { signal: AbortSignal },
   ) => object | void | Promise<unknown>
-  /** Правка завершилась без сохранения: Escape, запрет на лету (ADR 0040). */
+  /** The edit ended without saving: Escape, or disallowed on the fly (ADR 0040). */
   onEditCancel?: (end: CellEditCancel) => void
   /**
-   * Сохранение (ADR 0178, §5): `'auto'` (по умолчанию) — законченная правка уходит в
-   * `onCellEdit`; `'manual'` — становится черновиком ячейки, сохраняет пакет `onCommitEdits`.
+   * Saving (ADR 0178, §5): `'auto'` (default) — a finished edit goes to `onCellEdit`;
+   * `'manual'` — it becomes a cell draft, saved by the `onCommitEdits` batch.
    */
   saveMode?: 'auto' | 'manual'
   /**
-   * Сохранить пакет черновиков одним вызовом. Промис — ожидание на ячейках пакета; ответ может
-   * отказать части ячеек (`refused`) — у них отказ на объекте, черновик остаётся.
+   * Saves a batch of drafts in one call. A promise shows pending on the batch's cells; the answer
+   * may refuse some cells (`refused`) — they get a failure on the object, the draft stays.
    */
   onCommitEdits?: (
     batch: CellEditBatch,
     context: { signal: AbortSignal },
   ) => CellEditBatchResult | void | PromiseLike<CellEditBatchResult | void>
   /**
-   * Значение изменилось извне во время правки: `'commit'` (по умолчанию) —
-   * сохранить и отдать `original`/`current` в `onCellEdit`; `'block'` — не
-   * сохранять, завершить с `conflict`.
+   * The value changed from outside during the edit: `'commit'` (default) — save and pass
+   * `original`/`current` to `onCellEdit`; `'block'` — don't save, end with `conflict`.
    */
   onConflict?: 'commit' | 'block'
-  /** Пауза ввода перед запросом справочника в редакторе вариантов, мс (ADR 0175, ED18). */
+  /** Typing pause before the lookup request in the options editor, ms (ADR 0175, ED18). */
   searchDebounceMs?: number
-  /** Редактор ячеек по умолчанию; главнее — `editor` колонки и её типа (ADR 0175, ED3). */
+  /** Default cell editor; the column's and its type's `editor` take precedence (ADR 0175, ED3). */
   editor?: CellEditor
   /**
-   * Текст ошибки для значения или `null`/`undefined`, если оно допустимо. Значение — в
-   * типе колонки, `text` — набранный текст.
+   * Error text for a value, or `null`/`undefined` if it's valid. The value is in the column
+   * type, `text` is the typed text.
    */
   validate?: (
     value: unknown,
@@ -246,7 +245,7 @@ export interface CellEditingHooks extends CellEditHook {
    объявление, иначе declaration merging не склеится */
 declare module '../../core/dataTypes' {
   interface DataTypeFields<TData> {
-    /** Редактор ячеек колонки или типа; главнее аргумента `editor` плагина (ADR 0175, ED3). */
+    /** Cell editor of the column or type; takes precedence over the plugin's `editor` argument (ADR 0175, ED3). */
     editor?: CellEditor
   }
 }

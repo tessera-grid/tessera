@@ -25,22 +25,22 @@ export interface PaginationOptions extends Omit<
   PaginationModelOptions,
   'enabled'
 > {
-  /** `false` — плагин отключён. */
+  /** `false` disables the plugin. */
   enabled?: boolean
-  /** Варианты выбора размера (по умолчанию 10/25/50/100); `false` — без выбора. */
+  /** Page size options (10/25/50/100 by default); `false` — no select. */
   pageSizes?: number[] | false
   /**
-   * Переход на страницу (ADR 0192): `'buttons'` — ряд номеров вместо кнопок «первая» и
-   * «последняя», `'input'` — поле номера, `false` — только четыре кнопки. По умолчанию
-   * `'buttons'`; в узкой панели и при неизвестном итоге — четыре кнопки.
+   * Going to a page (ADR 0192): `'buttons'` — a row of numbers instead of the "first" and "last"
+   * buttons, `'input'` — a number field, `false` — only four buttons. `'buttons'` by default; in a
+   * narrow bar and with an unknown total — four buttons.
    */
   pageNumbers?: PageNumbersMode
   /**
-   * Отказ промиса `onPageChange` при страницах с сервера возвращает прежнюю страницу и её
-   * размер (по умолчанию true); `false` — страница остаётся новой (ADR 0116).
+   * With pages from the server, a rejection of the `onPageChange` promise returns the previous page
+   * and its size (true by default); `false` — the new page stays (ADR 0116).
    */
   revertOnReject?: boolean
-  /** Бизнес-колбэк смены страницы (аргумент фабрики); читается живо. */
+  /** Page change business callback (a factory argument); read live. */
   onPageChange?: PaginationHooks['onPageChange']
 }
 

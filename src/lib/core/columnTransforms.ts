@@ -6,30 +6,30 @@
 import type { DebugActionSource } from './debugActions'
 import type { TableLabels } from './localization'
 
-/** Преобразование колонки сейчас. */
+/** A column's current transform. */
 export interface ColumnTransformState {
-  /** Направление сортировки. */
+  /** Sort direction. */
   direction?: 'asc' | 'desc'
-  /** Место среди преобразований вида, с 1: приоритет сортировки, уровень группировки. */
+  /** Place among view transforms, from 1: sort priority, grouping level. */
   index?: number
-  /** Всего преобразований вида: номер приоритета показывают, только если их больше одного. */
+  /** Total view transforms: the priority number is shown only when there is more than one. */
   count?: number
 }
 
 export interface ColumnTransform {
-  /** Вид: `'sort'`, `'filter'`, `'group'` или свой вид плагина автора. */
+  /** Kind: `'sort'`, `'filter'`, `'group'`, or a custom kind of an author's plugin. */
   kind: string
-  /** Преобразование колонки; `undefined` — колонку оно не трогает. */
+  /** The column's transform; `undefined` means it doesn't affect the column. */
   of: (table: unknown, columnId: string) => ColumnTransformState | undefined
-  /** Название вида для перечня — «сортировка», «фильтр» (ADR 0204, §3). */
+  /** Kind name for the list — "sorting", "filter" (ADR 0204, §3). */
   name: (labels: TableLabels) => string
-  /** Состояние для доступного имени — «по убыванию, приоритет 2 из 3». */
+  /** State for the accessible name — "descending, priority 2 of 3". */
   describe: (labels: TableLabels, state: ColumnTransformState) => string
-  /** Ключ значка в `icons` по состоянию — `sortDesc`, `filterActive`. */
+  /** Icon key in `icons` for the state — `sortDesc`, `filterActive`. */
   icon: (state: ColumnTransformState) => string
   /**
-   * Снять преобразование колонок тем же путём, что и действие пользователя плагина: серверный
-   * режим с откатом, канал действий с источником `source`.
+   * Removes the transform of columns the same way as the plugin's user action: server mode
+   * with rollback, the debug-action channel with source `source`.
    */
   clear: (
     table: unknown,

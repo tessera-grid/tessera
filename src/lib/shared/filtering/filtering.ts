@@ -24,13 +24,13 @@ export interface ColumnFilterEntry {
   value: unknown
 }
 
-/** Пользователь изменил фильтры колонок (после дебаунса). */
+/** The user changed column filters (after the debounce). */
 export type FilterChangeHook = (
   filters: ColumnFilterEntry[],
   context: ServerActionContext,
 ) => ServerActionResult
 
-/** Пользователь изменил строку поиска (после дебаунса); `scope` — где ищет грид. */
+/** The user changed the search string (after the debounce); `scope` is where the grid searches. */
 export type SearchChangeHook = (
   search: string,
   scope: SearchScope,
@@ -61,7 +61,7 @@ interface SearchHooks {
   onSearchChange?: SearchChangeHook
 }
 
-/** Где ищет грид — для сервера, чтобы искать по тем же колонкам (ADR 0053). */
+/** Where the grid searches — for the server, to search the same columns (ADR 0053). */
 export interface SearchScope {
   columnIds: string[]
 }

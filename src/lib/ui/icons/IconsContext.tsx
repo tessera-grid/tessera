@@ -58,9 +58,8 @@ import { EmptyStateIllustration } from './EmptyStateIllustration'
 import { CheckboxOutlineIcon } from './icons'
 
 /**
- * Иконкам таблицы передают только размер и класс — этого достаточно и для
- * lucide-иконок, и для in-house `SvgIcon`. Узкий тип избавляет от несовместимости
- * между `SVGProps` и `LucideProps`.
+ * Table icons receive only a size and a class — enough for lucide icons and for the in-house
+ * `SvgIcon`. The narrow type avoids incompatibilities between `SVGProps` and `LucideProps`.
  */
 export type IconComponent = ComponentType<{
   width?: number | string
@@ -69,129 +68,129 @@ export type IconComponent = ComponentType<{
 }>
 
 /**
- * Набор иконок таблицы. Любую можно переопределить через проп `icons` у DataGrid.
+ * The table's icon set. Any of them can be overridden through the DataGrid `icons` prop.
  */
 export interface TableIcons {
-  /** Индикатор перетаскивания строк/колонок */
+  /** Row and column drag indicator */
   drag: IconComponent
-  /** Сортировка не задана */
+  /** No sorting set */
   sort: IconComponent
-  /** Сортировка по возрастанию */
+  /** Ascending sort */
   sortAsc: IconComponent
-  /** Сортировка по убыванию */
+  /** Descending sort */
   sortDesc: IconComponent
-  /** Закрепление колонки */
+  /** Pin a column */
   pin: IconComponent
-  /** Закреплённая колонка (по умолчанию — та же, что `pin`) */
+  /** A pinned column (the same as `pin` by default) */
   pinned: IconComponent
-  /** Группировка */
+  /** Grouping */
   group: IconComponent
-  /** Сгруппированная колонка (по умолчанию — та же, что `group`) */
+  /** A grouped column (the same as `group` by default) */
   grouped: IconComponent
-  /** Сводка колонки — функция итога и значений групп (ADR 0230) */
+  /** Column summary — the function of the total and group values (ADR 0230) */
   summary: IconComponent
-  /** Разворачивание строк */
+  /** Expand rows */
   expand: IconComponent
-  /** Раскрытая строка: по умолчанию тот же шеврон с поворотом; свой значок — без поворота */
+  /** An expanded row: by default the same chevron, rotated; a custom icon isn't rotated */
   expanded: IconComponent
-  /** Раскрыть все строки — кнопка в шапке колонки раскрытия (ADR 0160): двойной шеврон */
+  /** Expand all rows — the button in the expand column header (ADR 0160): a double chevron */
   expandAll: IconComponent
-  /** Свернуть все строки: по умолчанию тот же шеврон с поворотом; свой значок — без поворота */
+  /** Collapse all rows: by default the same chevron, rotated; a custom icon isn't rotated */
   collapseAll: IconComponent
-  /** Чекбокс — пустой */
+  /** Checkbox — empty */
   checkboxOutline: IconComponent
-  /** Чекбокс — отмеченный */
+  /** Checkbox — checked */
   checkboxChecked: IconComponent
-  /** Чекбокс — неопределённое состояние */
+  /** Checkbox — indeterminate */
   checkboxIndeterminate: IconComponent
-  /** Кебаб-кнопка меню действий заголовка */
+  /** Header actions kebab button */
   menu: IconComponent
-  /** Редактирование ячейки */
+  /** Edit a cell */
   edit: IconComponent
-  /** Кнопка меню колонок в тулбаре */
+  /** Columns menu button in the toolbar */
   columns: IconComponent
-  /** Кнопка «Настройки вида» в тулбаре (ADR 0215) */
+  /** "View settings" button in the toolbar (ADR 0215) */
   viewSettings: IconComponent
-  /** Кнопка «Экспорт» в тулбаре */
+  /** "Export" button in the toolbar */
   download: IconComponent
-  /** Кнопка фильтра в заголовке (`columnFiltering`) */
+  /** Filter button in the header (`columnFiltering`) */
   filter: IconComponent
-  /** Кнопка фильтра при активном фильтре колонки (по умолчанию — та же, что `filter`) */
+  /** Filter button when the column filter is active (the same as `filter` by default) */
   filterActive: IconComponent
-  /** Поле быстрого поиска в тулбаре (`quickSearch`) */
+  /** Quick search field in the toolbar (`quickSearch`) */
   search: IconComponent
-  /** Очистка поля и сброс фильтра в сводке */
+  /** Clear a field and remove a filter in the summary */
   clear: IconComponent
-  /** Подсказка поля поиска: по каким колонкам ищем (ADR 0053) */
+  /** Search field hint: which columns are searched (ADR 0053) */
   info: IconComponent
-  /** Пункт «Скрыть колонку» в кебабе заголовка */
+  /** The "Hide column" item in the header kebab */
   hideColumn: IconComponent
-  /** Скрытая колонка в меню «Колонки»: снять её сортировку, фильтр и группировку (ADR 0204) */
+  /** A hidden column in the "Columns" menu: remove its sort, filter and grouping (ADR 0204) */
   clearColumnTransforms: IconComponent
-  /** Кнопки пагинации: первая / предыдущая / следующая / последняя страница */
+  /** Pagination buttons: first / previous / next / last page */
   firstPage: IconComponent
   previousPage: IconComponent
   nextPage: IconComponent
   lastPage: IconComponent
-  /** Листание месяцев в календаре фильтра дат (ADR 0047) */
+  /** Month paging in the date filter calendar (ADR 0047) */
   previousMonth: IconComponent
   nextMonth: IconComponent
-  /** Кнопка списка часов и минут у поля времени (ADR 0183, PK20) */
+  /** Button with the hour and minute list next to the time field (ADR 0183, PK20) */
   chooseTime: IconComponent
-  /** Метка ячейки, сохранение которой отклонено сервером */
+  /** Mark of a cell whose save the server rejected */
   saveFailed: IconComponent
-  /** Пункт меню, чьё действие отклонено (ADR 0078) */
+  /** A menu item whose action was rejected (ADR 0078) */
   actionFailed: IconComponent
-  /** «Стоп» занятой кнопки: нажатие отменяет её действие (ADR 0153) */
+  /** "Stop" on a busy button: pressing cancels its action (ADR 0153) */
   cancelAction: IconComponent
-  /** Ответ «Вставить» на вопрос перед вставкой (ADR 0219, WR3); «Не вставлять» — `clear` */
+  /** The "Paste" answer to the question before pasting (ADR 0219, WR3); "Don't paste" uses `clear` */
   pasteConfirm: IconComponent
-  /** Блок ошибки догрузки ленты и его кнопка повтора (ADR 0081) */
+  /** The infinite-scroll load-more error block and its retry button (ADR 0081) */
   loadMoreFailed: IconComponent
   retry: IconComponent
-  /** Иллюстрация заглушек пустой таблицы (ADR 0123) */
+  /** Illustration of empty-table stubs (ADR 0123) */
   emptyState: IconComponent
-  /** Плашка и заглушка ошибки загрузки данных (ADR 0096) */
+  /** Alert and stub of a data load error (ADR 0096) */
   loadFailed: IconComponent
-  /** Плашка `Alert` в тоне успеха без своей иконки (ADR 0227) */
+  /** An `Alert` in the success tone without its own icon (ADR 0227) */
   alertSuccess: IconComponent
-  /** Плашка `Alert` в нейтральном тоне без своей иконки (ADR 0227) */
+  /** An `Alert` in the neutral tone without its own icon (ADR 0227) */
   alertNeutral: IconComponent
-  /** Кнопка «наверх» в нижней панели (ADR 0082) */
+  /** "Back to top" button in the status bar (ADR 0082) */
   backToTop: IconComponent
-  /** Кнопка журнала отказов в тулбаре (ADR 0177) */
+  /** Failure log button in the toolbar (ADR 0177) */
   failureLog: IconComponent
-  /** «Показать» записи журнала отказов: прокрутка к цели (ADR 0177) */
+  /** "Show" on a failure log entry: scroll to the target (ADR 0177) */
   failureShow: IconComponent
-  /** Иллюстрация пустого журнала отказов (ADR 0177) */
+  /** Illustration of an empty failure log (ADR 0177) */
   failureLogEmpty: IconComponent
-  /** Кнопка пульта черновиков в тулбаре (ADR 0178) */
+  /** Unsaved-changes panel button in the toolbar (ADR 0178) */
   unsavedChanges: IconComponent
-  /** «Применить» черновика в пульте (ADR 0178) */
+  /** "Apply" of a draft in the panel (ADR 0178) */
   draftApply: IconComponent
-  /** «Сбросить» черновика в пульте (ADR 0178) */
+  /** "Discard" of a draft in the panel (ADR 0178) */
   draftDiscard: IconComponent
-  /** Иллюстрация пустого пульта черновиков (ADR 0178) */
+  /** Illustration of an empty unsaved-changes panel (ADR 0178) */
   unsavedChangesEmpty: IconComponent
-  /** «Отменить» в тулбаре и меню (ADR 0222) */
+  /** "Undo" in the toolbar and menu (ADR 0222) */
   undo: IconComponent
-  /** «Повторить» в тулбаре и меню (ADR 0222) */
+  /** "Redo" in the toolbar and menu (ADR 0222) */
   redo: IconComponent
-  /** Кнопка истории правок в тулбаре (ADR 0222) */
+  /** Edit history button in the toolbar (ADR 0222) */
   editHistory: IconComponent
-  /** Иллюстрация пустой истории правок (ADR 0222) */
+  /** Illustration of an empty edit history (ADR 0222) */
   editHistoryEmpty: IconComponent
-  /** Кнопка «к первой колонке» в нижней панели (ADR 0105) */
+  /** "To first column" button in the status bar (ADR 0105) */
   backToStart: IconComponent
-  /** Пункт меню, заблокированный с причиной (ADR 0078) */
+  /** A menu item disabled with a reason (ADR 0078) */
   actionBlocked: IconComponent
-  /** Пункт-раздел меню и строка «назад» раздела (ADR 0079) */
+  /** A section menu item and the section's "back" row (ADR 0079) */
   submenu: IconComponent
   menuBack: IconComponent
-  /** Автоподбор ширины по содержимому (ADR 0217): колонка и все колонки */
+  /** Autofit width to content (ADR 0217): one column and all columns */
   autosizeColumn: IconComponent
   autosizeAllColumns: IconComponent
-  /** Варианты осей панели экспорта (ADR 0074): строки и колонки */
+  /** Export panel axis options (ADR 0074): rows and columns */
   exportRowsAll: IconComponent
   exportRowsView: IconComponent
   exportRowsPage: IconComponent

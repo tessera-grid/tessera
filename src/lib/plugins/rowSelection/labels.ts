@@ -2,20 +2,20 @@
 import { defineLabels } from '../../core/localization'
 
 export interface RowSelectionLabels {
-  /** Доступное имя чекбокса выбора строки */
+  /** Accessible name of the row selection checkbox */
   selectRow: string
-  /** Доступное имя чекбокса выбора всех строк */
+  /** Accessible name of the select-all checkbox */
   selectAll: string
-  /** Доступное имя флажка строки-группы: выбрать группу целиком (ADR 0148) */
+  /** Accessible name of a group row checkbox: select the whole group (ADR 0148) */
   selectGroup: string
-  /** Короткие формы счётчиков в узкой нижней панели (ADR 0083, TX6); не обрезаются */
+  /** Short counter forms in a narrow status bar (ADR 0083, TX6); never truncated */
   selectedRowsShort: (count: number) => string
   selectedRowsHiddenShort: (count: number) => string
-  /** Счётчик выбранных строк в нижней панели (`rowSelection({ selectedCount })`) */
+  /** Selected row counter in the status bar (`rowSelection({ selectedCount })`) */
   selectedRows: (count: number) => string
-  /** Добавка к счётчику выбранных: выбранные строки, скрытые фильтром (ADR 0045) */
+  /** Addition to the selected counter: selected rows hidden by a filter (ADR 0045) */
   selectedRowsHidden: (count: number) => string
-  /** Действие: выбрать все строки страницы */
+  /** Action: select all rows of the page */
   actionToggleAllPageRows: string
 }
 

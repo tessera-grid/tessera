@@ -15,13 +15,13 @@ import { filteringLabels } from '../../shared/filtering/labels'
 import { ownStage } from '../../core/rowEngine/engine'
 
 export interface QuickSearchModelOptions {
-  /** `false` — плагин отключён: поиск не применяется. */
+  /** `false` disables the plugin: search is not applied. */
   enabled?: boolean
-  /** Строка поиска: задаёт приложение; без него срез хранит грид. */
+  /** Search string set by the application; without it the grid keeps the slice. */
   globalFilter?: string
-  /** Новое значение среза после каждого изменения изнутри грида. */
+  /** New slice value after each change from inside the grid. */
   onGlobalFilterChange?: (next: string) => void
-  /** Начальное значение среза, которым владеет грид. */
+  /** Initial value of the slice the grid owns. */
   initialGlobalFilter?: string
 }
 
