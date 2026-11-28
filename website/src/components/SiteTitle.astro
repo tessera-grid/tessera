@@ -1,0 +1,27 @@
+---
+// Версия выпуска рядом с логотипом (ADR 0113 §7, DC12) — из package.json библиотеки.
+import Default from '@astrojs/starlight/components/SiteTitle.astro'
+
+import pkg from '../../../package.json'
+---
+
+<div class="tsr-docs-title">
+  <Default />
+  <span class="tsr-docs-version" data-version>v{pkg.version}</span>
+</div>
+
+<style>
+  .tsr-docs-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .tsr-docs-version {
+    font-size: var(--sl-text-xs);
+    color: var(--sl-color-gray-2);
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 999px;
+    padding: 0 0.5rem;
+    white-space: nowrap;
+  }
+</style>

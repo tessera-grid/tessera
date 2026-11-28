@@ -1,0 +1,31 @@
+---
+title: Быстрый старт
+description: Первая таблица с сортировкой и изменением ширины колонок.
+revision: 1
+---
+
+import { Code } from '@astrojs/starlight/components'
+import quickStart from '../../../../../snippets/quick-start.tsx?raw'
+import StoryLink from '../../../../components/StoryLink.astro'
+
+Пример рисует список людей с сортировкой и изменением ширины колонок.
+
+<Code code={quickStart} lang="tsx" title="People.tsx" />
+
+## Что здесь происходит
+
+- **`plugins`** включает возможности. `columnSorting()` добавляет кнопки сортировки в
+  заголовки, `columnSizing()` — ручки изменения ширины.
+- **Колонка разрешает возможность себе.** Плагин включает сортировку у таблицы, а
+  `enableSorting: true` разрешает её колонке.
+- **`dataType`** говорит таблице, как показывать, сортировать, фильтровать и править значения
+  колонки.
+- **У `columns` и `data` постоянная ссылка.** Новый массив пересобирает модель таблицы,
+  поэтому задавайте колонки вне компонента или мемоизируйте их.
+- **Id строк.** По умолчанию id строки — её поле `id`. Если строкового `id` у строк нет,
+  передайте `getRowId: row => String(row.key)`.
+
+<StoryLink
+  id="tessera-datagrid-columns-sorting--column-sorting-playground"
+  label="Сортировка в Storybook"
+/>

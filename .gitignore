@@ -48,3 +48,10 @@ pnpm-debug.log*
 .env
 .env.local
 .env.*.local
+
+# Docs site (ADR 0113): dependencies, build output, generated API reference and lists
+website/node_modules
+website/dist
+website/.astro
+website/src/content/docs/api
+website/src/generated

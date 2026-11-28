@@ -1,0 +1,21 @@
+---
+title: TypeScript
+description: Типы колонок с набором фич ваших плагинов.
+revision: 1
+---
+
+import { Code } from '@astrojs/starlight/components'
+import typescriptCode from '../../../../../snippets/typescript.tsx?raw'
+
+Чаще всего `useCreateTable` не нужны явные параметры типов: тип строки выводится из
+`columns` и `data`, а набор фич — из списка `plugins`.
+
+Типы TanStack Table v9 параметризованы набором фич. Если колонки объявлены вне вызова,
+выведите этот набор из своих плагинов через `TesseraFeatures`:
+
+<Code code={typescriptCode} lang="tsx" title="usePeopleTable.ts" />
+
+- Tessera не переэкспортирует типы TanStack Table (`ColumnDef`, `Row`, `Cell`) —
+  импортируйте их из `@tanstack/react-table`.
+- API возможности виден в типах, только когда её плагин есть в `plugins`.
+- Если у строк нет строкового поля `id`, `getRowId` обязателен — это проверяет компилятор.

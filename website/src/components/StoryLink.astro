@@ -1,0 +1,19 @@
+---
+// Ссылка «Open in Storybook» по id истории публичной сборки (ADR 0113 §6, DC11).
+import { storyUrl } from '../lib/storybook.mjs'
+
+interface Props {
+  id: string
+  label?: string
+}
+
+const { id, label = 'Open in Storybook' } = Astro.props
+---
+
+<a class="tsr-docs-story" href={storyUrl(import.meta.env.BASE_URL, id)}>{label} ↗</a>
+
+<style>
+  .tsr-docs-story {
+    font-weight: 600;
+  }
+</style>

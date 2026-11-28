@@ -23,9 +23,12 @@
     "types": ["node", "vite/client"],
 
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@tessera-grid/tessera": ["./src/index.ts"],
+      "@tessera-grid/tessera/plugins": ["./src/plugins.ts"],
+      "@tessera-grid/tessera/ui": ["./src/ui.ts"]
     }
   },
-  "include": ["src", "scripts/doiuse.d.ts"],
+  "include": ["src", "scripts/doiuse.d.ts", "website/snippets"],
   "exclude": ["node_modules", "dist"]
 }

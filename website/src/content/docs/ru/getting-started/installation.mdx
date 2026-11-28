@@ -1,0 +1,33 @@
+---
+title: Установка
+description: Установка Tessera и её peer-зависимостей.
+revision: 1
+---
+
+import { Code } from '@astrojs/starlight/components'
+import stylesCode from '../../../../../snippets/styles.ts?raw'
+
+Tessera работает с React 18 и 19. React и TanStack Table — peer-зависимости: их ставит
+приложение, и в нём остаётся по одной копии каждой.
+
+```bash
+npm install @tessera-grid/tessera @tanstack/react-table react react-dom
+```
+
+## Стили
+
+Подключите таблицу стилей один раз, например во входном файле приложения:
+
+<Code code={stylesCode} lang="ts" title="main.ts" />
+
+В таблице стилей тема таблицы задана CSS-переменными — их можно переопределить своими правилами
+CSS; подробнее — в разделе «Настройка».
+
+## Входы пакета
+
+| Импорт                            | Что внутри                                                      |
+| --------------------------------- | --------------------------------------------------------------- |
+| `@tessera-grid/tessera`           | `useCreateTable`, `DataGrid`, типы и API плагинов               |
+| `@tessera-grid/tessera/plugins`   | фабрики плагинов: `columnSorting()`, `rowSelection()`, …        |
+| `@tessera-grid/tessera/ui`        | UI-примитивы, из которых собрана таблица, — для своих контролов |
+| `@tessera-grid/tessera/style.css` | таблица стилей                                                  |

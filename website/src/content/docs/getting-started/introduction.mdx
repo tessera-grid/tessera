@@ -1,0 +1,38 @@
+---
+title: Introduction
+description: What Tessera is and when to choose it.
+revision: 1
+---
+
+import StoryLink from '../../../components/StoryLink.astro'
+
+Tessera is a data grid for React built on [TanStack Table](https://tanstack.com/table).
+TanStack Table gives you the table model; Tessera adds the rendered grid on top of it:
+virtualized rows and columns, a built-in UI for sorting, filtering, pinning, editing and
+more, and a theme you control with CSS variables.
+
+## How it works
+
+You work with two calls:
+
+- `useCreateTable({ columns, data, plugins })` builds a table instance.
+- `<DataGrid table={table} />` renders it.
+
+Every feature is a **plugin**. You import a plugin's factory from
+`@tessera-grid/tessera/plugins` and put it in the `plugins` list. A plugin that isn't in the
+list doesn't run and isn't bundled.
+
+## When to choose Tessera
+
+- You want TanStack Table's model and types, but not to build the grid UI yourself.
+- You need large data: rows are always virtualized, and the server row model loads rows in
+  blocks as the user scrolls.
+- You need keyboard access and screen-reader support: the grid targets WCAG 2.2 AA.
+- You want to match your design system: colors, sizes and motion are CSS variables, icons
+  and labels can be replaced.
+
+## What's next
+
+- [Install the package](../installation/) and [build your first grid](../quick-start/).
+- Read [Core concepts](../core-concepts/) before you add plugins.
+- Browse every feature live: <StoryLink id="tessera-datagrid-playground--data-grid-playground" label="Grid playground in Storybook" />

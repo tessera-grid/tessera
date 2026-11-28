@@ -1,0 +1,40 @@
+---
+// Таблица справочного списка из кода (ADR 0113, DC8).
+import { cssVariables, iconKeys, labelKeys } from '../lib/reference'
+
+interface Props {
+  kind: 'css' | 'labels' | 'icons'
+}
+
+const { kind } = Astro.props
+const rows: [string, string][] =
+  kind === 'css'
+    ? cssVariables().map(name => [name, ''])
+    : kind === 'labels'
+      ? labelKeys().map(({ key, value }) => [key, value ?? '(function)'])
+      : iconKeys().map(({ key, description }) => [key, description])
+const [first, second] =
+  kind === 'css' ? ['Variable', ''] : kind === 'labels' ? ['Key', 'English default'] : ['Key', 'Icon']
+---
+
+<p>{rows.length} entries, generated from the library source.</p>
+<table>
+  <thead>
+    <tr>
+      <th>{first}</th>
+      {second && <th>{second}</th>}
+    </tr>
+  </thead>
+  <tbody>
+    {
+      rows.map(([name, text]) => (
+        <tr>
+          <td>
+            <code>{name}</code>
+          </td>
+          {second && <td>{text}</td>}
+        </tr>
+      ))
+    }
+  </tbody>
+</table>

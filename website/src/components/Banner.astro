@@ -1,0 +1,37 @@
+---
+// Плашка «перевод устарел» (ADR 0113 §2, DC3) поверх баннера Starlight.
+import Default from '@astrojs/starlight/components/Banner.astro'
+import { getEntry } from 'astro:content'
+
+import { englishIdOf, RU_PREFIX, translationStatus } from '../lib/translation'
+
+const { entry, id, isFallback } = Astro.locals.starlightRoute
+let outdated = false
+if (!isFallback && id.startsWith(RU_PREFIX)) {
+  const english = await getEntry('docs', englishIdOf(id))
+  outdated =
+    english !== undefined &&
+    translationStatus(english.data.revision, entry.data.revision) === 'outdated'
+}
+---
+
+{
+  outdated && (
+    <div class="tsr-docs-outdated" role="note">
+      Перевод устарел: английская версия страницы обновлена. Переключите язык на English, чтобы
+      прочитать актуальный текст.
+    </div>
+  )
+}
+<Default />
+
+<style>
+  .tsr-docs-outdated {
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    background: var(--sl-color-orange-low);
+    border: 1px solid var(--sl-color-orange);
+    color: var(--sl-color-white);
+    margin-block-end: 1rem;
+  }
+</style>

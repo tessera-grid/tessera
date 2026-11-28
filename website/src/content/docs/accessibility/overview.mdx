@@ -1,0 +1,22 @@
+---
+title: Accessibility
+description: WCAG 2.2 AA, keyboard, screen readers and touch.
+sidebar:
+  label: Overview
+---
+
+import StoryLink from '../../../components/StoryLink.astro'
+
+The grid targets WCAG 2.2 AA. It always builds a valid ARIA tree with accessible names. With `enableKeyboardNavigation` it becomes a `grid` with arrow-key navigation; without it, it is a `table` and every control is reachable with Tab. Everything you can do by dragging, you can also do from a menu.
+
+The full guide is being written. Until then:
+
+- <StoryLink
+    id="tessera-datagrid-accessibility--accessibility-playground"
+    label="Accessibility"
+  />
+- <StoryLink
+    id="tessera-datagrid-cells-keyboard--keyboard-playground"
+    label="Keyboard"
+  />
+- <StoryLink id="tessera-datagrid-core-touch--touch-playground" label="Touch" />

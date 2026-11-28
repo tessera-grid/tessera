@@ -1,0 +1,10 @@
+---
+title: Localization keys
+description: Keys of the localization dictionary.
+---
+
+import ReferenceTable from '../../../components/ReferenceTable.astro'
+
+Pass a dictionary to the `localization` prop of `DataGrid`. Core keys are flat; plugin keys are `<plugin>.<key>`. A value is a template string with `{name}` placeholders or a function. Keys with a `count` also take word-form keys such as `<key>_one`.
+
+<ReferenceTable kind="labels" />

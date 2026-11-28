@@ -1,0 +1,22 @@
+---
+title: TypeScript
+description: Typing columns with the feature set your plugins bring.
+revision: 1
+---
+
+import { Code } from '@astrojs/starlight/components'
+import typescriptCode from '../../../../snippets/typescript.tsx?raw'
+
+In most cases `useCreateTable` needs no explicit type parameters. The row type comes from
+`columns` and `data`, and the feature set comes from the `plugins` list.
+
+TanStack Table v9 types are parameterized by a feature set. When you declare columns outside
+the call, derive that set from your plugins with `TesseraFeatures`:
+
+<Code code={typescriptCode} lang="tsx" title="usePeopleTable.ts" />
+
+- Tessera doesn't re-export TanStack Table types such as `ColumnDef`, `Row` or `Cell`. Import
+  them from `@tanstack/react-table`.
+- A feature's API appears in the types only when its plugin is in `plugins`.
+- If your rows have no string `id` field, `getRowId` is required, and the compiler checks
+  this.

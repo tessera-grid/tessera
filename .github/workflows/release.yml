@@ -1,6 +1,6 @@
 # Выпуск по тегу `v*` (ADR 0103, CI11): тег ставит `npm run release`. Гейт — барьер и шаги
-# перед публикацией, затем черновик GitHub Release с разделом CHANGELOG. Публикации в npm
-# на этом этапе нет.
+# перед публикацией, затем черновик GitHub Release с разделом CHANGELOG и сайт документации
+# в GitHub Pages (ADR 0113, DC12). Публикации в npm на этом этапе нет.
 name: Release
 
 on:
@@ -38,3 +38,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: gh release create "$TAG" --draft --title "$TAG" --notes-file release-notes.md
+
+  docs:
+    name: Publish docs
+    # Сайт описывает выпущенную версию: публикация — только после гейта (ADR 0113, DC12).
+    needs: [barrier, prerelease]
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/docs.yml

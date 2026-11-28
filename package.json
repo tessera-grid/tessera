@@ -86,7 +86,10 @@
     "storybook": "storybook dev -p 6006",
     "storybook:public": "node scripts/storybook-public.mjs dev",
     "build-storybook": "storybook build",
-    "build-storybook:public": "node scripts/storybook-public.mjs build"
+    "build-storybook:public": "node scripts/storybook-public.mjs build",
+    "docs:dev": "npm run dev --prefix website",
+    "docs:api": "node website/scripts/check-api.mjs",
+    "docs:build": "node scripts/docs-build.mjs"
   },
   "peerDependencies": {
     "@tanstack/react-table": "^9",

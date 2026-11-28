@@ -178,3 +178,21 @@ jobs:
           CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
         # Изменения вида принимает человек в Chromatic; сборка CI от них не краснеет.
         run: npx chromatic --only-changed --exit-zero-on-changes --build-script-name build-storybook
+
+  docs:
+    name: Docs site
+    # Сайт документации на каждый пуш (ADR 0113, DC7): справочник без предупреждений, описания
+    # на английском, сборка Astro. Storybook рядом собирает только публикация (docs.yml).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            website/package-lock.json
+      - run: npm ci
+      - run: npm ci --prefix website
+      - run: npm run docs:build -- --no-storybook

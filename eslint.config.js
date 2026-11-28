@@ -12,6 +12,11 @@ export default tseslint.config(
       'storybook-static',
       'storybook-public',
       'coverage',
+      // Сайт документации (ADR 0113): зависимости, сборка, сгенерированный справочник.
+      'website/node_modules',
+      'website/dist',
+      'website/.astro',
+      'website/src/generated',
       '.claude',
       // Исходники upstream с патчем (ADR 0143): свой стиль, правки — только патчем.
       'src/vendor',
@@ -102,7 +107,12 @@ export default tseslint.config(
   },
   // Node-скрипты сборки/отчётов
   {
-    files: ['scripts/**/*.{js,mjs,cjs}'],
+    files: [
+      'scripts/**/*.{js,mjs,cjs}',
+      // Сайт документации (ADR 0113): конфиги и скрипты сборки — в Node.
+      'website/*.mjs',
+      'website/scripts/**/*.mjs',
+    ],
     languageOptions: {
       globals: { ...globals.node },
     },

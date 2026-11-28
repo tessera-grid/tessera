@@ -42,7 +42,7 @@ const jobIds = (text: string) =>
 const usesOf = (block: string) =>
   [...block.matchAll(/^\s+(?:- )?uses: (.+)$/gm)].map(match => match[1].trim())
 
-const ALL = ['ci.yml', 'perf.yml', 'prerelease.yml', 'release.yml']
+const ALL = ['ci.yml', 'docs.yml', 'perf.yml', 'prerelease.yml', 'release.yml']
 
 describe('CI', () => {
   it('CI1: на пуш в master и на pull_request гоняется весь барьер; падение любого шага — красный статус', () => {

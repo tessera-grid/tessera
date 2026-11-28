@@ -21,13 +21,35 @@ Tessera is a table library for React built on TanStack Table. It provides ready-
 - **Customizable behavior and appearance.** Choose which actions are available for columns, rows, and cells. Adjust sorting, order, visibility, and more.
 - **Built-in UI kit.** Reuse and customize the ready-to-use components.
 
-## Try the live demo
+## Install
 
-Explore the full collection of [interactive Storybook examples](https://master--6ace36e34624f121dc46dd4d.chromatic.com/).
+```bash
+npm install @tessera-grid/tessera @tanstack/react-table react react-dom
+```
+
+## Example
+
+```tsx
+import { DataGrid, useCreateTable } from '@tessera-grid/tessera'
+import { columnSizing, columnSorting } from '@tessera-grid/tessera/plugins'
+import '@tessera-grid/tessera/style.css'
+
+const plugins = [columnSorting(), columnSizing()] as const
+
+export const People = ({ columns, people }) => {
+  const table = useCreateTable({ columns, data: people, plugins: [...plugins] })
+
+  return <DataGrid table={table} height={400} />
+}
+```
 
 ## Read the documentation
 
-Coming soon
+Guides, the API reference and examples: [tessera-grid.github.io/tessera](https://tessera-grid.github.io/tessera/). In Russian: [README.ru.md](README.ru.md).
+
+## Try the live demo
+
+Explore the full collection of [interactive Storybook examples](https://master--6ace36e34624f121dc46dd4d.chromatic.com/).
 
 ## Included for free
 

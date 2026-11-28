@@ -1,0 +1,66 @@
+---
+title: Core concepts
+description: Plugins, state, business callbacks and reactivity.
+revision: 1
+---
+
+import { Code } from '@astrojs/starlight/components'
+import columnsCode from '../../../../snippets/columns.tsx?raw'
+import pluginsCode from '../../../../snippets/plugins.tsx?raw'
+import stateCode from '../../../../snippets/controlled-state.tsx?raw'
+import reactivityCode from '../../../../snippets/reactivity.tsx?raw'
+
+## Columns and data
+
+Columns are TanStack Table column definitions. Tessera reads a few extra fields, such as
+`dataType` and `enableDragging`. Rows are your own objects: a cell reads its value through
+the column's accessor, and `row.original` is the object itself.
+
+<Code code={columnsCode} lang="tsx" title="useColumns.tsx" />
+
+Keep both `columns` and `data` stable. A new `columns` or `data` array rebuilds the table
+model. Update `data` immutably: give a changed row a new object and keep the other objects
+as they are. The grid then rebuilds only the changed rows.
+
+## Plugins
+
+A plugin is a factory call in the `plugins` list. If it's in the list, the feature is on.
+
+<Code code={pluginsCode} lang="tsx" title="Items.tsx" />
+
+- **Arguments are live.** Change them on every render like props, there is no need to
+  memoize the list.
+- **The list itself is fixed** for the table's lifetime. To turn a plugin off and on, pass
+  `enabled: false` instead of removing it from the list.
+- **Business callbacks** such as `onSelectRow` go into the plugin's arguments. The grid reads
+  them when it calls them, so inline functions are fine.
+
+## State
+
+You don't have to manage any state: each feature keeps its own state inside the grid. When
+you need to control a state slice, its owner takes it as arguments:
+
+- **Column slices** (`columnVisibility`, `columnOrder`, `columnPinning`, `columnSizing`) go
+  to `useCreateTable` as `state` and `handlers`.
+- **A plugin's slice** goes to its factory as `<slice>`, `on<Slice>Change` and
+  `initial<Slice>`.
+
+<Code code={stateCode} lang="tsx" title="SelectableItems.tsx" />
+
+Each interface plugin also has a **model** plugin, for example `columnSortingModel()` for
+`columnSorting()`. A model applies its slice but renders no controls, so you can build your
+own UI around it.
+
+## Reactivity
+
+Table state lives in TanStack Store, one atom per slice. A component that subscribes to a
+slice re-renders only when that slice changes:
+
+- `useSlice(table, key)` subscribes to one slice.
+- `useTableState(table, selector)` subscribes to a projection of several slices, compared
+  shallowly.
+
+<Code code={reactivityCode} lang="tsx" title="SelectedMark.tsx" />
+
+Business callbacks are for business logic. For a value that should change what the grid
+renders, use state and these subscriptions.

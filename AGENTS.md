@@ -183,6 +183,9 @@ docs/architecture/   contributor deep-dive (source of truth — see below)
 | Самопроверка сравнения        | `npm run perf:selftest`          | PF15–PF16: A против A и подмешанная работа, ~20 мин.                                     |
 | Черновик выпуска              | `npm run release:draft`          | Раздел версии в `CHANGELOG.md` из коммитов, без коммита (ADR 0103).                      |
 | Выпуск версии                 | `npm run release`                | Версия, тег и пуш; только по просьбе автора (ADR 0103).                                  |
+| Сайт документации (live)      | `npm run docs:dev`               | Astro в `website/`; зависимости — `npm ci --prefix website` (ADR 0113).                  |
+| Справочник API (проверка)     | `npm run docs:api`               | TypeDoc без предупреждений, описания публичных типов на английском (DC7, DC15).          |
+| Сайт документации (сборка)    | `npm run docs:build`             | Справочник, сайт и публичный Storybook в `website/dist`; `-- --no-storybook` — без него. |
 
 Тесты выполняются в **реальном браузере**, а не в jsdom — см. [Проверки](#4-checks).
 
@@ -266,21 +269,22 @@ docs/architecture/   contributor deep-dive (source of truth — see below)
 `perf`) обязательны зелёные быстрый барьер и сборка. Не запускайте долгие тесты до них и не
 ждите часами результат, если форматирование, линт, типы или сборка ещё не проверены.**
 
-| #   | Барьер               | Команда                      | Блокирующий?                                |
-| --- | -------------------- | ---------------------------- | ------------------------------------------- |
-| 1   | Формат               | `npm run format:check`       | да                                          |
-| 2   | Линт                 | `npm run lint`               | да                                          |
-| 3   | Типы                 | `npm run typecheck`          | да                                          |
-| 4   | Требования ↔ тесты   | `npm run check:requirements` | да                                          |
-| 5   | Сборка библиотеки    | `npm run build`              | да                                          |
-| 6   | Tree-shaking         | `npm run check:tree-shaking` | да                                          |
-| 7   | Инварианты темы      | `npm run check:theme`        | да — **при правках темы**                   |
-| 8   | Порог браузеров      | `npm run check:browsers`     | да                                          |
-| 9   | Тесты                | `npm test` _(vitest)_        | да — **см. примечание**                     |
-| 10  | Движки браузеров     | `npm run test:browsers`      | да — **при правках сессий правки и фокуса** |
-| 11  | Все наборы в движках | `npm run test:engines`       | перед публикацией в npm                     |
-| 12  | Наборы на React 18   | `npm run test:react18`       | перед публикацией в npm                     |
-| 13  | Пакет у потребителя  | `npm run check:package`      | перед публикацией в npm                     |
+| #   | Барьер               | Команда                      | Блокирующий?                                      |
+| --- | -------------------- | ---------------------------- | ------------------------------------------------- |
+| 1   | Формат               | `npm run format:check`       | да                                                |
+| 2   | Линт                 | `npm run lint`               | да                                                |
+| 3   | Типы                 | `npm run typecheck`          | да                                                |
+| 4   | Требования ↔ тесты   | `npm run check:requirements` | да                                                |
+| 5   | Сборка библиотеки    | `npm run build`              | да                                                |
+| 6   | Tree-shaking         | `npm run check:tree-shaking` | да                                                |
+| 7   | Инварианты темы      | `npm run check:theme`        | да — **при правках темы**                         |
+| 8   | Порог браузеров      | `npm run check:browsers`     | да                                                |
+| 9   | Тесты                | `npm test` _(vitest)_        | да — **см. примечание**                           |
+| 10  | Движки браузеров     | `npm run test:browsers`      | да — **при правках сессий правки и фокуса**       |
+| 11  | Все наборы в движках | `npm run test:engines`       | перед публикацией в npm                           |
+| 12  | Наборы на React 18   | `npm run test:react18`       | перед публикацией в npm                           |
+| 13  | Пакет у потребителя  | `npm run check:package`      | перед публикацией в npm                           |
+| 14  | Сайт документации    | `npm run docs:build`         | да — **при правках `website/` и публичных типов** |
 
 Шаги 1–4 можно пройти одним `npm run check:static`. `npm run test:parallel` — быстрый
 прогон для внутреннего цикла, не барьер: под общей нагрузкой тесты, чувствительные к

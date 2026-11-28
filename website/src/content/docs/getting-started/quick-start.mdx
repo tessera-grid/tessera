@@ -1,0 +1,30 @@
+---
+title: Quick start
+description: Render your first grid with sorting and resizable columns.
+revision: 1
+---
+
+import { Code } from '@astrojs/starlight/components'
+import quickStart from '../../../../snippets/quick-start.tsx?raw'
+import StoryLink from '../../../components/StoryLink.astro'
+
+This example renders a list of people with sortable columns and column resizing.
+
+<Code code={quickStart} lang="tsx" title="People.tsx" />
+
+## What happens here
+
+- **`plugins`** turns features on. `columnSorting()` adds sort buttons to headers,
+  `columnSizing()` adds resize handles.
+- **Columns allow features for themselves.** The plugin enables sorting for the table, and
+  `enableSorting: true` allows it for a column.
+- **`dataType`** tells the grid how to display, sort, filter and edit the column's values.
+- **`columns` and `data` keep their identity.** A new array rebuilds the table model, so define
+  columns outside the component or memoize them.
+- **Row ids.** By default a row's id is its `id` field. If your rows don't have a string `id`,
+  pass `getRowId: row => String(row.key)`.
+
+<StoryLink
+  id="tessera-datagrid-columns-sorting--column-sorting-playground"
+  label="Sorting in Storybook"
+/>

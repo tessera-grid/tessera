@@ -1,0 +1,12 @@
+/* Акцент сайта — из палитры brand/ (градиент знака): синий в светлой и тёмной теме. */
+:root {
+  --sl-color-accent-low: #172554;
+  --sl-color-accent: #3b82f6;
+  --sl-color-accent-high: #bfdbfe;
+}
+
+:root[data-theme='light'] {
+  --sl-color-accent-low: #dbeafe;
+  --sl-color-accent: #0062d6;
+  --sl-color-accent-high: #0b3a8a;
+}

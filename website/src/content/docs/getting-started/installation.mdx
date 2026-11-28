@@ -1,0 +1,33 @@
+---
+title: Installation
+description: Install Tessera and its peer dependencies.
+revision: 1
+---
+
+import { Code } from '@astrojs/starlight/components'
+import stylesCode from '../../../../snippets/styles.ts?raw'
+
+Tessera works with React 18 and 19. React and TanStack Table are peer dependencies: your
+application installs them, so there is one copy of each.
+
+```bash
+npm install @tessera-grid/tessera @tanstack/react-table react react-dom
+```
+
+## Styles
+
+Import the stylesheet once, for example in your application's entry file:
+
+<Code code={stylesCode} lang="ts" title="main.ts" />
+
+The stylesheet defines the grid's theme as CSS variables. You can override them with your own
+CSS rules; see the Customization section.
+
+## Entry points
+
+| Import                            | Contains                                                  |
+| --------------------------------- | --------------------------------------------------------- |
+| `@tessera-grid/tessera`           | `useCreateTable`, `DataGrid`, types and the plugin API    |
+| `@tessera-grid/tessera/plugins`   | plugin factories: `columnSorting()`, `rowSelection()`, …  |
+| `@tessera-grid/tessera/ui`        | UI primitives the grid is built from, for custom controls |
+| `@tessera-grid/tessera/style.css` | the stylesheet                                            |
