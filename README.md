@@ -31,12 +31,12 @@ Coming soon
 
 ## Included for free
 
-| Feature | Benefit |
-| --- | --- |
+| Feature                                                                                                                                                                  | Benefit                                                                             |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
 | [Server-side row model](https://master--6ace36e34624f121dc46dd4d.chromatic.com/?path=/story/tessera-datagrid-data-loading-server-row-model--server-row-model-playground) | Load and cache rows in blocks as you scroll, with support for server-side grouping. |
-| [Row grouping and aggregation](https://master--6ace36e34624f121dc46dd4d.chromatic.com/?path=/story/tessera-datagrid-rows-grouping--row-grouping-playground) | Group rows by column values and calculate totals for each group. |
-| [Cell range selection and clipboard paste](https://master--6ace36e34624f121dc46dd4d.chromatic.com/?path=/story/tessera-datagrid-cells-selection--cell-selection-range) | Select a rectangular range of cells and paste values into multiple cells at once. |
-| [Excel export](https://master--6ace36e34624f121dc46dd4d.chromatic.com/?path=/story/tessera-datagrid-export--export-excel) | Download table data as an Excel workbook (`.xlsx`). |
+| [Row grouping and aggregation](https://master--6ace36e34624f121dc46dd4d.chromatic.com/?path=/story/tessera-datagrid-rows-grouping--row-grouping-playground)              | Group rows by column values and calculate totals for each group.                    |
+| [Cell range selection and clipboard paste](https://master--6ace36e34624f121dc46dd4d.chromatic.com/?path=/story/tessera-datagrid-cells-selection--cell-selection-range)   | Select a rectangular range of cells and paste values into multiple cells at once.   |
+| [Excel export](https://master--6ace36e34624f121dc46dd4d.chromatic.com/?path=/story/tessera-datagrid-export--export-excel)                                                | Download table data as an Excel workbook (`.xlsx`).                                 |
 
 <p align="center">
   <picture>
