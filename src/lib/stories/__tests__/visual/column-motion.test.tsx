@@ -626,28 +626,23 @@ describe('Движение колонок (ADR 0115)', () => {
       server.browser !== 'chromium',
       'счётчики работы — трейс CDP, только Chromium',
     )
-    const screen = await mount()
-    try {
-      const commitsOf = async () => {
-        const work = await measureWork(
-          gridRoot(),
-          () => moveRightByKeyboard('c1'),
-          {
-            quietFrames: 10,
-          },
-        )
+    const commitsOf = async (duration: number) => {
+      const screen = await mount()
+      try {
         await sleep(SETTLE_MS)
-        table.setColumnOrder([])
-        await sleep(SETTLE_MS)
+        const work = await measureWork(gridRoot(), async () => {
+          table.setColumnOrder(['c0', 'c2', 'c1', 'c3', 'c4', 'c5', 'c6', 'c7'])
+          await sleep(duration + SETTLE_MS)
+        })
         return work.commits
+      } finally {
+        await screen.unmount()
       }
-      const standard = await commitsOf()
-      slowMotion(3000)
-      const slow = await commitsOf()
-      expect(standard).toBeGreaterThan(0)
-      expect(slow).toBe(standard)
-    } finally {
-      await screen.unmount()
     }
+    const standard = await commitsOf(250)
+    slowMotion(3000)
+    const slow = await commitsOf(3000)
+    expect(standard).toBeGreaterThan(0)
+    expect(slow).toBe(standard)
   })
 })
