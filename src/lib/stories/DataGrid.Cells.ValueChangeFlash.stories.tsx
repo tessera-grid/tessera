@@ -1,6 +1,5 @@
 import { Meta, StoryObj } from '@storybook/react'
 import { expect } from 'storybook/test'
-import { columnSortingModel } from '../plugins/columnSortingModel'
 import type { StoryProps } from './DataGridStory.types'
 import { StoryComponent } from './DataGridStory'
 import { dataGridMeta } from './dataGridMeta'
@@ -875,9 +874,8 @@ const quoteRanking: Partial<StoryProps> = {
   ],
   enableValueChangeFlash: true,
   valueChangeFlashColumnDefault: false,
-  extraPlugins: [
-    columnSortingModel({ initialSorting: [{ id: 'day', desc: true }] }),
-  ],
+  enableColumnSortingModel: true,
+  columnSortingModelInitialSorting: [{ id: 'day', desc: true }],
 }
 
 const ENTERING_ROW: readonly DemoStoryStep[] = [
@@ -917,6 +915,7 @@ export const ValueChangeFlashEnteringRow: StoryObj<StoryProps> = {
   render: args => (
     <DemoStory
       title={{ ru: 'Котировка входит в окно', en: 'A quote moves into view' }}
+      atomicSteps
       steps={ENTERING_ROW}
       args={guideArgs(quoteRanking, args)}
     />
