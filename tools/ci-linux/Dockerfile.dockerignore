@@ -1,5 +1,16 @@
 **
 !.nvmrc
+!.gitignore
+!.prettierrc.json
+!.prettierignore
+!.agents/
+!.agents/skills/
+!.agents/skills/author-storybook-jetbrains/
+!.agents/skills/author-storybook-jetbrains/SKILL.md
+!.agents/skills/author-storybook-jetbrains/webstorm-cli.mjs
+!.agents/skills/discover-storybook-jetbrains/
+!.agents/skills/discover-storybook-jetbrains/SKILL.md
+!.agents/skills/discover-storybook-jetbrains/webstorm-cli.mjs
 !.github/
 !.github/workflows/
 !.github/workflows/**
@@ -25,7 +36,7 @@
 !scripts/**
 !tools/
 !tools/ci-linux/
-!tools/ci-linux/run.sh
+!tools/ci-linux/**
 !tools/react18/
 !tools/react18/**
 **/__screenshots__/

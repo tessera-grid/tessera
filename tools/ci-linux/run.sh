@@ -2,6 +2,30 @@
 set -u
 
 case "${1:-}" in
+  checks)
+    set -e
+    # check:requirements перечисляет файлы рабочего дерева через git ls-files.
+    git rev-parse --git-dir >/dev/null 2>&1 || git init --quiet
+    # Кэши привязаны к версиям инструментов и конфигам. У каждой версии один писатель.
+    if [[ -d /var/cache/tessera-checks ]]; then
+      key=$(sha256sum package-lock.json .nvmrc .prettierrc.json .prettierignore eslint.config.js tsconfig.json | sha256sum | cut -d' ' -f1)
+      cache="/var/cache/tessera-checks/$key"
+      mkdir -p "$cache" node_modules/.cache
+      exec 9>"$cache/lock"
+      flock 9
+      for tool in prettier eslint tsc; do
+        mkdir -p "$cache/$tool"
+        ln -sfnT "$cache/$tool" "node_modules/.cache/$tool"
+      done
+    fi
+    npm run format:check
+    npm run lint
+    NODE_OPTIONS=--max-old-space-size=4096 npm run typecheck
+    npm run check:requirements
+    npm run build
+    npm run check:tree-shaking
+    npm run check:theme
+    exec npm run check:browsers ;;
   guides)
     case "${2:-}" in
       [1-4]|merge) export VITE_CONTRAST_PART="$2" ;;
@@ -10,7 +34,7 @@ case "${1:-}" in
     exec npm test -- --project 'browser (chromium)' contrast-guides.test.tsx guide-fresh.test.tsx ;;
   engines) exec npm run test:browsers ;;
   [1-4]) shard="$1/4" ;;
-  *) echo 'Usage: run.sh {1|2|3|4|engines|guides {1|2|3|4|merge}}' >&2; exit 2 ;;
+  *) echo 'Usage: run.sh {1|2|3|4|engines|checks|guides {1|2|3|4|merge}}' >&2; exit 2 ;;
 esac
 
 result=0

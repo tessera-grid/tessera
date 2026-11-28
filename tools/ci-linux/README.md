@@ -9,8 +9,14 @@ Docker кэширует слой с зависимостями отдельно 
 docker compose -f tools/ci-linux/compose.yaml build
 ```
 
-Каждая команда запускает отдельный Linux-контейнер. Код возврата ненулевой, если упал хотя бы один этап.
-`engines` запускает набор CI для Firefox и WebKit.
+Каждая команда запускает отдельный Linux-контейнер. На машине с 20 логическими
+CPU и 15,5 ГиБ для Docker запускайте `engines` (Firefox и WebKit) до старта
+четырёх шардов или после их этапа unit/touch. При одновременном старте шести
+контейнеров тесты сессий Firefox/WebKit превышали тайм-аут 15 с.
+`checks` выполняет статику, сборку и проверки dist.
+Том `tessera-ci-linux-checks-cache` хранит кэши Prettier, ESLint и TypeScript
+между проектами Compose. После изменения lockfile или конфигурации проверок
+создаётся новый каталог кэша. Отчёты гайдов хранятся отдельно для каждого прогона.
 
 ```sh
 docker compose -f tools/ci-linux/compose.yaml run --rm tests 1
@@ -18,6 +24,7 @@ docker compose -f tools/ci-linux/compose.yaml run --rm tests 2
 docker compose -f tools/ci-linux/compose.yaml run --rm tests 3
 docker compose -f tools/ci-linux/compose.yaml run --rm tests 4
 docker compose -f tools/ci-linux/compose.yaml run --rm tests engines
+docker compose -f tools/ci-linux/compose.yaml run --rm tests checks
 ```
 
 После успешного завершения всех четырёх шардов выполните общую сверку гайдов.
